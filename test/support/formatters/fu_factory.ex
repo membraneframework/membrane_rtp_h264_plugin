@@ -1,4 +1,5 @@
 defmodule Membrane.Support.Formatters.FUFactory do
+  @moduledoc false
   @max_fixtures 5
 
   alias Membrane.Support.Fixtures

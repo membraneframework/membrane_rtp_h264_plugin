@@ -1,8 +1,28 @@
 defmodule Membrane.Element.RTP.H264.NALHeader.PayloadTypeDecoder do
+  @moduledoc """
+  Module responsible for parsing Types stored in NALHEaders.
+
+  Types are defined as follows.
+
+  | ID       | RBSP Type      |
+  |----------|----------------|
+  | 0        | Unspecified    |
+  | 1-23     | NAL unit types |
+  | 24       | STAP-A         |
+  | 25       | STAP-B         |
+  | 26       | MTAP-16        |
+  | 27       | MTAP-24        |
+  | 28       | FU-A           |
+  | 29       | FU-B           |
+  | Reserved | 30-31          |
+
+  For more information about RBSP types see `t:rbsp_types`.
+  """
+
   @typedoc """
   RBSP stands for Raw Byte Sequence Payload
 
-  RBSP types are described in detail here[here](https://yumichan.net/video-processing/video-compression/introduction-to-h264-nal-unit)
+  RBSP types are described in detail [here](https://yumichan.net/video-processing/video-compression/introduction-to-h264-nal-unit)
   """
   @type rbsp_types :: :rbsp_type
   @type stap_a :: :stap_a

@@ -14,7 +14,7 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
   """
 
   @typedoc """
-  This flag must be false (bit representing it must be 0).
+  This flag must be false. If it is set to 1. Packet might have been damaged.
   """
   @type is_damaged :: boolean()
 
@@ -28,18 +28,6 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
 
   @typedoc """
   Specifies the type of RBSP data structure contained in the NAL unit.
-
-  #TODO Remove me
-  0 Not used
-  1-23 Does not need processing?
-  STAP-A 24
-  STAP-B 25
-  MTAP-16 26
-  MTAP-24 27
-  FU-A 28
-  FU-B 29
-  30-31 Reserved
-
   """
   @type type :: 1..23
 
@@ -51,13 +39,16 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
           type: type()
         }
 
+  @doc """
+  Parses NAL Header.
+  """
   @spec parse_unit_header(binary()) :: {:error, :malformed_data} | {:ok, {t(), binary()}}
   def parse_unit_header(raw_nal)
 
   def parse_unit_header(<<f::1, nri::2, type::5, rest::binary()>>) do
     nal = %__MODULE__{
-      forbidden_zero: f,
-      nal_ref_idc: nri,
+      forbidden_zero: f == 1,
+      nal_ref_idc: nri == 1,
       type: type
     }
 

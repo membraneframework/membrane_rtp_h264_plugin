@@ -15,9 +15,9 @@ defmodule Membrane.Element.RTP.H264.FUTest do
       assert %FU{data: [{hdr, @base_seq_num, _}]} = fu
 
       assert hdr == %Membrane.Element.RTP.H264.FU.Header{
-               end_bit: 0,
+               end_bit: false,
                reserved: false,
-               start_bit: 1,
+               start_bit: true,
                type: 1
              }
     end

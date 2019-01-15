@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RtpH264.DepayloaderTest do
+defmodule Membrane.Element.RTP.H264.DepayloaderTest do
   use ExUnit.Case
   use Bunch
 
@@ -13,11 +13,9 @@ defmodule Membrane.Element.RtpH264.DepayloaderTest do
 
       assert {{:ok, actions}, %{}} = Depayloader.handle_process(:input, buffer, nil, %{})
       assert {:output, result} = Keyword.fetch!(actions, :buffer)
-      assert <<1::32, processed_data::binary()>> = result
+      assert %Buffer{payload: <<1::32, processed_data::binary()>>} = result
       assert processed_data == data
     end
-
-    test "should pass through parameter set"
 
     test "parses FU-A packets" do
       assert {{:ok, actions}, state} =
@@ -31,21 +29,21 @@ defmodule Membrane.Element.RtpH264.DepayloaderTest do
                end)
 
       assert state == %{}
-      assert {:output, data} = Keyword.fetch!(actions, :buffer)
+      assert {:output, %Buffer{payload: data}} = Keyword.fetch!(actions, :buffer)
       assert starts_with_0001?(data)
     end
 
     test "parses STAP-A packets" do
       data = STAPFactory.sample_data()
-      buffer = %Buffer{payload: data |> STAPFactory.into_stap_unit()}
+      buffer = %Buffer{payload: STAPFactory.into_stap_unit(data)}
 
       assert {{:ok, actions}, %{}} = Depayloader.handle_process(:input, buffer, nil, %{})
 
       actions
       |> Enum.zip(data)
       |> Enum.each(fn {result, original_data} ->
-        assert {:buffer, {:output, result_data}} = result
-        assert <<1::32, nalu_hdr::binary-size(1), original_data::binary>> = result_data
+        assert {:buffer, {:output, %Buffer{payload: result_data}}} = result
+        assert <<1::32, nalu_hdr::binary-size(1), ^original_data::binary>> = result_data
         assert nalu_hdr == STAPFactory.example_nalu_hdr()
       end)
     end

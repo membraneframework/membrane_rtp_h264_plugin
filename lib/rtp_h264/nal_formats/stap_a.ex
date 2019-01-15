@@ -1,7 +1,7 @@
 defmodule Membrane.Element.RTP.H264.StapA do
-  use Bunch
-
-  @doc """
+  @moduledoc """
+  Module responsible for parsing Single Time Agregation Packets type A.
+  Documented in [RFC6184](https://tools.ietf.org/html/rfc6184#page-20)
 
   ```
    0                   1                   2                   3
@@ -23,7 +23,12 @@ defmodule Membrane.Element.RTP.H264.StapA do
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   ```
   """
+  use Bunch
 
+  @doc """
+  Parses a STAP type A
+  """
+  @spec parse(binary()) :: {:ok, [binary()]} | {:error, :packet_malformed}
   def parse(data) do
     data
     |> parse_batch()

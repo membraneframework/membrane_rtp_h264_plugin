@@ -1,4 +1,5 @@
 defmodule Membrane.Support.Formatters.STAPFactory do
+  @moduledoc false
   def sample_data() do
     1..10
     |> Enum.map(&<<&1::8>>)

@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RtpH264.MixProject do
+defmodule Membrane.Element.RTP.H264.MixProject do
   use Mix.Project
 
   @version "0.1.0"
@@ -51,10 +51,10 @@ defmodule Membrane.Element.RtpH264.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 0.2.0"},
+      {:membrane_core, "~> 0.2.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
-      {:bunch, "~> 0.1.2"}
+      {:bunch, "~> 0.2"}
     ]
   end
 end
