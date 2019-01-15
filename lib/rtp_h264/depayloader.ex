@@ -1,12 +1,8 @@
-defmodule Membrane.Element.RtpH264.Depayloader do
+defmodule Membrane.Element.RTP.H264.Depayloader do
   use Membrane.Element.Base.Filter
+  use Bunch
 
   @start_code_prefix_one_3bytes <<1::32>>
-
-  # Doklejać prefix
-  # States?
-  #  Waiting for fragment
-  #  Clear
 
   def_output_pads output: [
                     caps: :any
@@ -29,20 +25,17 @@ defmodule Membrane.Element.RtpH264.Depayloader do
         {:ok, %{}}
 
       {:ok, {header, rest}} ->
-        packetization_type = PayloadTypeDecoder.decode_type(header.type)
-
-        case packetization_type do
+        case PayloadTypeDecoder.decode_type(header.type) do
           :rbsp_type ->
-            buffer_output(rest)
+            buffer_output(payload)
 
           :fu_a ->
             FU.parse(rest, extract_seq_num(meta), map_state_to_fu(state))
             |> handle_fu_result()
 
           :stap_a ->
-            StapA.parse(rest)
-            |> case do
-              {:ok, data} -> action_from_data(data)
+            case StapA.parse(rest) do
+              {:ok, data} -> {{:ok, Enum.flat_map(data, &action_from_data/1)}, %{}}
               {:error, _} -> {:ok, %{}}
             end
         end
@@ -54,16 +47,13 @@ defmodule Membrane.Element.RtpH264.Depayloader do
     {:ok, state}
   end
 
-  defp extract_seq_num(meta) do
-    %{rtp: %{sequence_number: seq_num}} = meta
-    seq_num
-  end
+  defp extract_seq_num(meta), do: meta ~> (%{rtp: %{sequence_number: seq_num}} -> seq_num)
 
   defp precede_with_signature(stream), do: @start_code_prefix_one_3bytes <> stream
 
   defp action_from_data(data) do
-    data = precede_with_signature(data)
-    [buffer: {:output, data}]
+    precede_with_signature(data)
+    ~> [buffer: {:output, &1}]
   end
 
   defp buffer_output(data), do: {{:ok, action_from_data(data)}, %{}}

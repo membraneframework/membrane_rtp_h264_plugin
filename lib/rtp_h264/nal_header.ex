@@ -51,7 +51,7 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
           type: type()
         }
 
-  @spec parse_unit_header(binary()) :: {:error, :malformed_data} | {:ok, t()}
+  @spec parse_unit_header(binary()) :: {:error, :malformed_data} | {:ok, {t(), binary()}}
   def parse_unit_header(raw_nal)
 
   def parse_unit_header(<<f::1, nri::2, type::5, rest::binary()>>) do

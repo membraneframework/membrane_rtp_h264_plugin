@@ -2,14 +2,14 @@ defmodule Membrane.Element.RTP.H264.FUTest do
   use ExUnit.Case
   use Bunch
 
-  alias Membrane.Element.RTP.H264.FU.TestFactory
+  alias Membrane.Support.Formatters.FUFactory
   alias Membrane.Element.RTP.H264.FU
 
   @base_seq_num 4567
 
   describe "Fragmentation Unit parser" do
     test "parses first packet" do
-      packet = TestFactory.first()
+      packet = FUFactory.first()
 
       assert {:incomplete, fu} = FU.parse(packet, @base_seq_num)
       assert %FU{data: [{hdr, @base_seq_num, _}]} = fu
@@ -23,7 +23,7 @@ defmodule Membrane.Element.RTP.H264.FUTest do
     end
 
     test "parses packet sequence" do
-      fixtures = TestFactory.get_all_fixtures()
+      fixtures = FUFactory.get_all_fixtures()
 
       result =
         fixtures
@@ -33,11 +33,11 @@ defmodule Membrane.Element.RTP.H264.FUTest do
           ~>> ({_command, value} -> value)
         end)
 
-      assert result == TestFactory.glued_fixtures()
+      assert result == FUFactory.glued_fixtures()
     end
 
     test "returns error when one of non edge packets dropped" do
-      fixtures = TestFactory.get_all_fixtures()
+      fixtures = FUFactory.get_all_fixtures()
 
       assert {:error, :missing_packet} ==
                fixtures

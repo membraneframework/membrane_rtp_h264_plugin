@@ -3,14 +3,15 @@ defmodule Membrane.Element.RTP.H264.StapATest do
   use Bunch
 
   alias Membrane.Element.RTP.H264.StapA
+  alias Membrane.Support.Formatters.STAPFactory
 
   describe "Parser" do
     test "properly decodes nal agregate" do
-      test_data = gen_test_data()
+      test_data = STAPFactory.sample_data()
 
       {:ok, result} =
         test_data
-        |> StapFactory.binaries_into_stap()
+        |> STAPFactory.binaries_into_stap()
         |> StapA.parse()
 
       Enum.zip(result, test_data)
@@ -22,10 +23,5 @@ defmodule Membrane.Element.RTP.H264.StapATest do
     test "returns error when packet is malformed" do
       assert {:error, :packet_malformed} == StapA.parse(<<35402::16, 0, 0, 0, 0, 0, 0, 1, 1, 2>>)
     end
-  end
-
-  defp gen_test_data() do
-    1..10
-    |> Enum.map(&<<&1::8>>)
   end
 end

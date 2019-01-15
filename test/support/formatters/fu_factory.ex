@@ -1,5 +1,7 @@
-defmodule Membrane.Element.RTP.H264.FU.TestFactory do
+defmodule Membrane.Support.Formatters.FUFactory do
   @max_fixtures 5
+
+  alias Membrane.Support.Fixtures
 
   @spec glued_fixtures() :: binary()
   def glued_fixtures,
@@ -11,7 +13,7 @@ defmodule Membrane.Element.RTP.H264.FU.TestFactory do
   def first(), do: get_fixture(1)
   @spec last() :: binary()
   def last(), do: get_fixture(@max_fixtures)
-  defp get_fixture(which), do: which |> fixture_name() |> path() |> File.read!()
+
   defp fixture_name(which), do: "fu_nal_#{which}_#{@max_fixtures}.bin"
-  defp path(fixture_name), do: __DIR__ |> Path.join("../fixtures") |> Path.join(fixture_name)
+  defp get_fixture(which), do: which |> fixture_name() |> Fixtures.get_fixture()
 end

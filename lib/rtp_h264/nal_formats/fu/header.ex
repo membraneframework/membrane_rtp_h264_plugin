@@ -26,7 +26,7 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
 
   defguard valid_frame_boundary(start, finish) when start != 1 or finish != 1
 
-  @spec parse(binary()) :: {:ok, {t(), binary()}} | {:error, :packet_malformed}
+  @spec parse(binary()) :: {:error, :packet_malformed} | {:ok, {t(), binary()}}
   def parse(<<start::1, finish::1, 0::1, nal_type::5, rest::binary>>)
       when nal_type in 1..23 and valid_frame_boundary(start, finish) do
     header = %__MODULE__{
@@ -38,5 +38,5 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
     {:ok, {header, rest}}
   end
 
-  def parse(_), do: {:error, :packet_malformed}
+  def parse(<<_::binary>>), do: {:error, :packet_malformed}
 end

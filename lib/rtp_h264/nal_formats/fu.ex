@@ -7,25 +7,14 @@ defmodule Membrane.Element.RTP.H264.FU do
   # {toilet: true}
   # {toilet: %{prefered_size, warn}}
 
-  defmacro peek(do: block) do
-    Macro.prewalk(block, fn tree -> Macro.expand(tree, __ENV__) end)
-    |> Macro.to_string()
-    |> IO.puts()
-
-    quote do
-      unquote(block)
-    end
-  end
-
   defstruct data: []
   @type t :: %__MODULE__{}
 
+  @spec parse(binary(), any(), t) :: {:ok, binary()} | {:error, :packet_malformed}
   def parse(data, seq_num, acc \\ %__MODULE__{}) do
-    peek do
-      data
-      |> Header.parse()
-      ~>> ({:ok, {header, value}} -> do_parse(header, value, seq_num, acc))
-    end
+    data
+    |> Header.parse()
+    ~>> ({:ok, {header, value}} -> do_parse(header, value, seq_num, acc))
   end
 
   @spec do_parse(Header.t(), binary(), number(), t) :: {:ok, t} | {:error, atom()}

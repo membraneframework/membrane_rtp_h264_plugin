@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RtpH264 do
+defmodule Membrane.Element.RTP.H264 do
   @moduledoc false
   use Application
 
