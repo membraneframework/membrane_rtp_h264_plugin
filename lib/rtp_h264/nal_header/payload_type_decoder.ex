@@ -1,6 +1,6 @@
 defmodule Membrane.Element.RTP.H264.NALHeader.PayloadTypeDecoder do
   @moduledoc """
-  Module responsible for parsing Types stored in NALHEaders.
+  Module responsible for parsing Types stored in NAL Headers.
 
   Types are defined as follows.
 
@@ -16,7 +16,7 @@ defmodule Membrane.Element.RTP.H264.NALHeader.PayloadTypeDecoder do
   | 29       | FU-B           |
   | Reserved | 30-31          |
 
-  For more information about RBSP types see `t:rbsp_types`.
+  For more information about RBSP types see `t:rbsp_types/0`.
   """
 
   @typedoc """
@@ -48,7 +48,4 @@ defmodule Membrane.Element.RTP.H264.NALHeader.PayloadTypeDecoder do
   def decode_type(28), do: :fu_a
   def decode_type(29), do: :fu_b
   def decode_type(number) when number in 30..31, do: :reserved
-
-  def is_supported(supported) when supported in [:stap_a, :fu_a, :rbsp_type], do: true
-  def is_supported(_), do: false
 end

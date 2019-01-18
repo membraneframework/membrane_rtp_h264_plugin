@@ -1,6 +1,6 @@
 defmodule Membrane.Element.RTP.H264.FU.Header do
   @moduledoc """
-  Defines structure representing Fragmentation Unit (FU) header
+  Defines a structure representing Fragmentation Unit (FU) header
   which is defined in [RFC6184](https://tools.ietf.org/html/rfc6184#page-31)
 
   ```
@@ -14,7 +14,14 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
 
   alias Membrane.Element.RTP.H264.NALHeader
 
+  @typedoc """
+  SHOULD be set to true only in the first packet in a sequence.
+  """
   @type start_flag :: boolean()
+
+  @typedoc """
+  SHOULD be set to true only in the last packet in a sequence.
+  """
   @type end_flag :: boolean()
 
   @enforce_keys [:type]
@@ -26,14 +33,14 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
           type: NALHeader.type()
         }
 
-  defguard valid_frame_boundary(start, finish) when start != 1 or finish != 1
+  defguardp valid_frame_boundary(start, finish) when start != 1 or finish != 1
 
   @doc """
   Parses Fragmentation Unit Header
 
-  Returns `{:ok, header}` if parsing was successful.
+  Returns a `{:ok, header}` tuple if parsing was successful.
 
-  It will fail if the Start bit and End bit are both be set to one in the
+  It will fail if the Start bit and End bit are both set to one in the
   same Fragmentation Unit Header, because a fragmented NAL unit
   MUST NOT be transmitted in one FU.
   """

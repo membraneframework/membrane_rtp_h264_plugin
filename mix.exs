@@ -2,7 +2,7 @@ defmodule Membrane.Element.RTP.H264.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @github_url "https://github.com/membraneframework/membrane-element-rtp_h264"
+  @github_url "https://github.com/membraneframework/membrane-element-rtp-h264"
 
   def project do
     [
@@ -54,7 +54,9 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       {:membrane_core, "~> 0.2.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
-      {:bunch, "~> 0.2"}
+      {:bunch, "~> 0.2"},
+      {:membrane_caps_rtp, github: "membraneframework/membrane-caps-rtp"},
+      {:membrane_caps_video_h264, "~> 0.1"}
     ]
   end
 end

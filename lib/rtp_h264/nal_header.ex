@@ -5,11 +5,11 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
   Defined in [RFC6184](https://tools.ietf.org/html/rfc6184#section-5.3)
 
   ```
-      +---------------+
-      |0|1|2|3|4|5|6|7|
-      +-+-+-+-+-+-+-+-+
-      |F|NRI|  Type   |
-      +---------------+
+    +---------------+
+    |0|1|2|3|4|5|6|7|
+    +-+-+-+-+-+-+-+-+
+    |F|NRI|  Type   |
+    +---------------+
   ```
   """
 
@@ -22,7 +22,7 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
   A value of 00 indicates that the content of the NAL unit is not
   used to reconstruct reference pictures for inter picture prediction.
   Such NAL units can be discarded without risking the integrity
-  of the reference pictures
+  of the reference pictures, although these payloads might contain metadata
   """
   @type nri :: 0..3
 
@@ -48,7 +48,7 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
   def parse_unit_header(<<f::1, nri::2, type::5, rest::binary()>>) do
     nal = %__MODULE__{
       forbidden_zero: f == 1,
-      nal_ref_idc: nri == 1,
+      nal_ref_idc: nri,
       type: type
     }
 

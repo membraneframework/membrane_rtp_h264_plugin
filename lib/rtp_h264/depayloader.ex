@@ -1,19 +1,21 @@
 defmodule Membrane.Element.RTP.H264.Depayloader do
   @moduledoc """
-  Depayloads H264 RTP payloads into H264 NALs.
+  Depayloads H264 RTP payloads into H264 NAL Units.
   """
   use Membrane.Element.Base.Filter
   use Bunch
+
+  alias Membrane.Caps.{RTP, Video.H264}
 
   @start_code_prefix_one_3bytes <<1::32>>
   @type sequence_number :: 0..65_535
 
   def_output_pads output: [
-                    caps: :any
+                    caps: {H264, stream_format: :byte_stream}
                   ]
 
   def_input_pads input: [
-                   caps: :any,
+                   caps: {RTP, payload_type: :dynamic},
                    demand_unit: :buffers
                  ]
 
@@ -23,7 +25,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   alias Membrane.Buffer
 
   @impl true
-  def handle_process(_pad, %Buffer{payload: payload, metadata: meta} = buffer, _ctx, state) do
+  def handle_process(_pad, %Buffer{payload: payload} = buffer, _ctx, state) do
     case NALHeader.parse_unit_header(payload) do
       {:error, :malformed_data} ->
         {:ok, %{}}
@@ -34,22 +36,10 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
             buffer_output(payload, buffer)
 
           :fu_a ->
-            case FU.parse(rest, extract_seq_num(meta), map_state_to_fu(state)) do
-              {:ok, data} -> buffer_output(data, buffer)
-              {:incomplete, fu} -> {:ok, fu}
-              {:error, _} -> {:ok, %{}}
-            end
+            handle_fu(header, rest, buffer, state)
 
           :stap_a ->
-            case StapA.parse(rest) do
-              {:ok, data} ->
-                data
-                |> Enum.flat_map(&action_from_data(&1, buffer))
-                ~> {{:ok, &1}, %{}}
-
-              {:error, _} ->
-                {:ok, %{}}
-            end
+            handle_stap(rest, buffer)
         end
     end
   end
@@ -58,7 +48,35 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   def handle_demand(_output_pad, size, _unit, _ctx, state),
     do: {{:ok, demand: {:input, size}}, state}
 
-  defp extract_seq_num(meta), do: meta ~> (%{rtp: %{sequence_number: seq_num}} -> seq_num)
+  defp handle_fu(header, data, %Buffer{metadata: metadata} = buffer, state) do
+    %{rtp: %{sequence_number: seq_num}} = metadata
+
+    case FU.parse(data, seq_num, map_state_to_fu(state)) do
+      {:ok, {data, type}} ->
+        is_damaged = if(header.forbidden_zero, do: 1, else: 0)
+        header = <<is_damaged::1, header.nal_ref_idc::2, type::5>>
+        data = header <> data
+        buffer_output(data, buffer)
+
+      {:incomplete, fu} ->
+        {:ok, fu}
+
+      {:error, _} ->
+        {:ok, %{}}
+    end
+  end
+
+  defp handle_stap(data, buffer) do
+    case StapA.parse(data) do
+      {:ok, result} ->
+        result
+        |> Enum.flat_map(&action_from_data(&1, buffer))
+        ~> {{:ok, &1}, %{}}
+
+      {:error, _} ->
+        {:ok, %{}}
+    end
+  end
 
   defp precede_with_signature(stream), do: @start_code_prefix_one_3bytes <> stream
 

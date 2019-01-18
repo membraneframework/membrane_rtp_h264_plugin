@@ -4,6 +4,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
 
   alias Membrane.Element.RTP.H264.Depayloader
   alias Membrane.Support.Formatters.{FUFactory, STAPFactory, RBSPNaluFactory}
+  alias Membrane.Element.RTP.H264.FU
   alias Membrane.Buffer
 
   describe "Depayloader when processing data" do
@@ -20,17 +21,19 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
     test "parses FU-A packets" do
       assert {{:ok, actions}, state} =
                FUFactory.get_all_fixtures()
+               |> Enum.map(&FUFactory.precede_with_fu_nal_header/1)
                ~> (enum -> Enum.zip(enum, 1..Enum.count(enum)))
                |> Enum.map(fn {elem, seq_num} ->
                  %Buffer{payload: elem, metadata: %{rtp: %{sequence_number: seq_num}}}
                end)
                |> Enum.reduce(%{}, fn buffer, prev_state ->
                  Depayloader.handle_process(:input, buffer, nil, prev_state)
+                 ~>> ({:ok, %FU{} = state} -> state)
                end)
 
       assert state == %{}
       assert {:output, %Buffer{payload: data}} = Keyword.fetch!(actions, :buffer)
-      assert starts_with_0001?(data)
+      assert data == <<1::32, FUFactory.glued_fixtures()::binary()>>
     end
 
     test "parses STAP-A packets" do
@@ -48,7 +51,4 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
       end)
     end
   end
-
-  defp starts_with_0001?(<<1::32, _::binary()>>), do: true
-  defp starts_with_0001?(_), do: false
 end

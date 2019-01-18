@@ -11,15 +11,8 @@ defmodule Membrane.Element.RTP.H264.FUTest do
     test "parses first packet" do
       packet = FUFactory.first()
 
-      assert {:incomplete, fu} = FU.parse(packet, @base_seq_num)
-      assert %FU{data: [{hdr, @base_seq_num, _}]} = fu
-
-      assert hdr == %Membrane.Element.RTP.H264.FU.Header{
-               end_bit: false,
-               reserved: false,
-               start_bit: true,
-               type: 1
-             }
+      assert {:incomplete, fu} = FU.parse(packet, @base_seq_num, %FU{})
+      assert %FU{data: [{@base_seq_num, _}]} = fu
     end
 
     test "parses packet sequence" do
@@ -33,7 +26,8 @@ defmodule Membrane.Element.RTP.H264.FUTest do
           ~>> ({_command, value} -> value)
         end)
 
-      assert result == FUFactory.glued_fixtures()
+      expected_result = FUFactory.glued_fixtures() ~> (<<_::8, rest::binary()>> -> rest)
+      assert result == {expected_result, 1}
     end
 
     test "returns error when one of non edge packets dropped" do
@@ -50,7 +44,7 @@ defmodule Membrane.Element.RTP.H264.FUTest do
 
     test "returns error when first packet is not starting packet" do
       invalid_first_packet = <<0::5, 3::3>>
-      assert {:error, :invalid_first_packet} == FU.parse(invalid_first_packet, 2)
+      assert {:error, :invalid_first_packet} == FU.parse(invalid_first_packet, 2, %FU{})
     end
   end
 end
