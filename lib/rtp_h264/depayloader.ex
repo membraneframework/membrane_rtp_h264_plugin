@@ -25,6 +25,11 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   alias Membrane.Buffer
 
   @impl true
+  def handle_caps(:input, _caps, _context, state) do
+    {:ok, state}
+  end
+
+  @impl true
   def handle_process(_pad, %Buffer{payload: payload} = buffer, _ctx, state) do
     case NALHeader.parse_unit_header(payload) do
       {:error, :malformed_data} ->
