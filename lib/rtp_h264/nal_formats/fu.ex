@@ -46,16 +46,16 @@ defmodule Membrane.Element.RTP.H264.FU do
   defp do_parse(_header, data, seq_num, %__MODULE__{data: acc} = fu),
     do: {:incomplete, %__MODULE__{fu | data: [{seq_num, data} | acc]}}
 
-  defp is_sequence_invalid?([{first_seq_num, _} | data] = all) do
+  defp is_sequence_invalid?([{first_seq_num, _} | data]) do
     data
     |> Enum.reduce_while(first_seq_num, fn
-      {a, _}, b when a + 1 == b ->
-        {:cont, a}
+      {next, _}, prev when next + 1 == prev ->
+        {:cont, next}
 
-      _, b ->
-        {:halt, b}
+      _, _ ->
+        {:halt, :discontinuity}
     end)
-    ~> (first_seq_num - &1 + 1 != Enum.count(all))
+    ~> (&1 == :discontinuity)
   end
 
   defp glue_accumulated_packets(data) do
