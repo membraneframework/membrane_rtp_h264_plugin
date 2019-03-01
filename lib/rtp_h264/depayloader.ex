@@ -4,10 +4,12 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   """
   use Membrane.Element.Base.Filter
   use Bunch
+  use Membrane.Log
 
   alias Membrane.Caps.{RTP, Video.H264}
+  alias Membrane.Event.Discontinuity
 
-  @start_code_prefix_one_3bytes <<1::32>>
+  @frame_prefix <<1::32>>
   @type sequence_number :: 0..65_535
 
   def_output_pads output: [
@@ -24,6 +26,15 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   alias Membrane.Element.RTP.H264.{FU, StapA}
   alias Membrane.Buffer
 
+  defmodule State do
+    # pp_acc, stands for packet parser accumulator
+    defstruct pp_acc: nil
+  end
+
+  def handle_init(_) do
+    {:ok, %State{}}
+  end
+
   @impl true
   def handle_caps(:input, _caps, _context, state) do
     {:ok, state}
@@ -33,11 +44,13 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   def handle_process(_pad, %Buffer{payload: payload} = buffer, _ctx, state) do
     case NALHeader.parse_unit_header(payload) do
       {:error, :malformed_data} ->
-        {:ok, %{}}
+        # TODO: Log the packet
+        log_malformed_buffer(buffer)
+        {:ok, %State{}}
 
       {:ok, {header, rest}} ->
         case PayloadTypeDecoder.decode_type(header.type) do
-          :rbsp_type ->
+          :single_nalu ->
             buffer_output(payload, buffer)
 
           :fu_a ->
@@ -50,24 +63,31 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_demand(_output_pad, size, _unit, _ctx, state),
+  def handle_demand(_output_pad, size, :buffers, _ctx, state),
     do: {{:ok, demand: {:input, size}}, state}
+
+  @impl true
+  def handle_event(:input, %Discontinuity{}, _context, %State{pp_acc: %FU{}} = state),
+    do: {:ok, %State{state | pp_acc: nil}}
+
+  def handle_event(_pad, event, _context, state), do: {{:ok, forward: event}, state}
 
   defp handle_fu(header, data, %Buffer{metadata: metadata} = buffer, state) do
     %{rtp: %{sequence_number: seq_num}} = metadata
 
     case FU.parse(data, seq_num, map_state_to_fu(state)) do
       {:ok, {data, type}} ->
-        is_damaged = if(header.forbidden_zero, do: 1, else: 0)
-        header = <<is_damaged::1, header.nal_ref_idc::2, type::5>>
+        # TODO: Maybe this logic should belong to parser?
+        header = <<0::1, header.nal_ref_idc::2, type::5>>
         data = header <> data
         buffer_output(data, buffer)
 
       {:incomplete, fu} ->
-        {:ok, fu}
+        {{:ok, redemand: :output}, %State{state | pp_acc: fu}}
 
       {:error, _} ->
-        {:ok, %{}}
+        log_malformed_buffer(buffer)
+        {{:ok, redemand: :output}, %State{state | pp_acc: %{}}}
     end
   end
 
@@ -76,23 +96,33 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
       {:ok, result} ->
         result
         |> Enum.flat_map(&action_from_data(&1, buffer))
-        ~> {{:ok, &1}, %{}}
+        ~> {{:ok, &1}, %State{}}
 
       {:error, _} ->
-        {:ok, %{}}
+        log_malformed_buffer(buffer)
+        {:ok, %State{}}
     end
   end
 
-  defp precede_with_signature(stream), do: @start_code_prefix_one_3bytes <> stream
+  defp buffer_output(data, buffer),
+    do: {{:ok, action_from_data(data, buffer)}, %State{}}
 
   defp action_from_data(data, buffer) do
     data
-    |> precede_with_signature()
+    |> add_prefix()
     ~> [buffer: {:output, %Buffer{buffer | payload: &1}}]
   end
 
-  defp buffer_output(data, buffer), do: {{:ok, action_from_data(data, buffer)}, %{}}
+  defp add_prefix(stream), do: @frame_prefix <> stream
 
-  defp map_state_to_fu(%FU{} = fu), do: fu
+  defp map_state_to_fu(%State{pp_acc: %FU{} = fu}), do: fu
   defp map_state_to_fu(_), do: %FU{}
+
+  defp log_malformed_buffer(%Buffer{metadata: metadata}) do
+    %{rtp: %{sequence_number: seq_num}} = metadata
+
+    debug("""
+    An error occured while parsing RTP frame with sequence_number: #{seq_num}
+    """)
+  end
 end

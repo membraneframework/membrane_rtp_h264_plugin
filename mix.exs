@@ -56,7 +56,8 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
       {:bunch, "~> 0.2"},
       {:membrane_caps_rtp, github: "membraneframework/membrane-caps-rtp"},
-      {:membrane_caps_video_h264, "~> 0.1"}
+      {:membrane_caps_video_h264, "~> 0.1"},
+      {:membrane_loggers, "~> 0.2.0"}
     ]
   end
 end

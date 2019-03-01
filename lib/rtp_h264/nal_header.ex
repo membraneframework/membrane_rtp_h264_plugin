@@ -14,11 +14,6 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
   """
 
   @typedoc """
-  This flag must be false. If it is set to 1. Packet might have been damaged.
-  """
-  @type is_damaged :: boolean()
-
-  @typedoc """
   A value of 00 indicates that the content of the NAL unit is not
   used to reconstruct reference pictures for inter picture prediction.
   Such NAL units can be discarded without risking the integrity
@@ -31,10 +26,9 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
   """
   @type type :: 1..23
 
-  defstruct [:forbidden_zero, :nal_ref_idc, :type]
+  defstruct [:nal_ref_idc, :type]
 
   @type t :: %__MODULE__{
-          forbidden_zero: is_damaged(),
           nal_ref_idc: nri(),
           type: type()
         }
@@ -45,15 +39,16 @@ defmodule Membrane.Element.RTP.H264.NALHeader do
   @spec parse_unit_header(binary()) :: {:error, :malformed_data} | {:ok, {t(), binary()}}
   def parse_unit_header(raw_nal)
 
-  def parse_unit_header(<<f::1, nri::2, type::5, rest::binary()>>) do
+  def parse_unit_header(<<0::1, nri::2, type::5, rest::binary()>>) do
     nal = %__MODULE__{
-      forbidden_zero: f == 1,
       nal_ref_idc: nri,
       type: type
     }
 
     {:ok, {nal, rest}}
   end
+
+  # detect wether packet is malformed by that first 0 bit
 
   def parse_unit_header(<<_::binary()>>), do: {:error, :malformed_data}
 end
