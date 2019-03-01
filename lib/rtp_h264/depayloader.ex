@@ -27,6 +27,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   alias Membrane.Buffer
 
   defmodule State do
+    @moduledoc false
     # pp_acc, stands for packet parser accumulator
     defstruct pp_acc: nil
   end
@@ -42,24 +43,21 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
   @impl true
   def handle_process(_pad, %Buffer{payload: payload} = buffer, _ctx, state) do
-    case NALHeader.parse_unit_header(payload) do
-      {:error, :malformed_data} ->
-        # TODO: Log the packet
-        log_malformed_buffer(buffer)
-        {:ok, %State{}}
+    NALHeader.parse_unit_header(payload)
+    ~>> ({:ok, {header, rest}} ->
+           case PayloadTypeDecoder.decode_type(header.type) do
+             :single_nalu ->
+               buffer_output(payload, buffer)
 
-      {:ok, {header, rest}} ->
-        case PayloadTypeDecoder.decode_type(header.type) do
-          :single_nalu ->
-            buffer_output(payload, buffer)
+             :fu_a ->
+               handle_fu(header, rest, buffer, state)
 
-          :fu_a ->
-            handle_fu(header, rest, buffer, state)
-
-          :stap_a ->
-            handle_stap(rest, buffer)
-        end
-    end
+             :stap_a ->
+               handle_stap(rest, buffer)
+           end)
+    ~>> ({:error, _} ->
+           log_malformed_buffer(buffer)
+           {{:ok, redemand: :output}, %State{state | pp_acc: nil}})
   end
 
   @impl true
@@ -75,33 +73,25 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   defp handle_fu(header, data, %Buffer{metadata: metadata} = buffer, state) do
     %{rtp: %{sequence_number: seq_num}} = metadata
 
-    case FU.parse(data, seq_num, map_state_to_fu(state)) do
+    FU.parse(data, seq_num, map_state_to_fu(state))
+    ~>> (
       {:ok, {data, type}} ->
-        # TODO: Maybe this logic should belong to parser?
         header = <<0::1, header.nal_ref_idc::2, type::5>>
         data = header <> data
         buffer_output(data, buffer)
 
       {:incomplete, fu} ->
         {{:ok, redemand: :output}, %State{state | pp_acc: fu}}
-
-      {:error, _} ->
-        log_malformed_buffer(buffer)
-        {{:ok, redemand: :output}, %State{state | pp_acc: %{}}}
-    end
+    )
   end
 
   defp handle_stap(data, buffer) do
-    case StapA.parse(data) do
-      {:ok, result} ->
-        result
-        |> Enum.flat_map(&action_from_data(&1, buffer))
-        ~> {{:ok, &1}, %State{}}
-
-      {:error, _} ->
-        log_malformed_buffer(buffer)
-        {:ok, %State{}}
-    end
+    data
+    |> StapA.parse()
+    ~>> ({:ok, result} ->
+           result
+           |> Enum.flat_map(&action_from_data(&1, buffer))
+           ~> {{:ok, &1}, %State{}})
   end
 
   defp buffer_output(data, buffer),
@@ -121,8 +111,8 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   defp log_malformed_buffer(%Buffer{metadata: metadata}) do
     %{rtp: %{sequence_number: seq_num}} = metadata
 
-    debug("""
-    An error occured while parsing RTP frame with sequence_number: #{seq_num}
+    warn("""
+    An error occurred while parsing RTP frame with sequence_number: #{seq_num}
     """)
   end
 end

@@ -12,7 +12,7 @@ defmodule Membrane.Element.RTP.H264.FUTest do
       packet = FUFactory.first()
 
       assert {:incomplete, fu} = FU.parse(packet, @base_seq_num, %FU{})
-      assert %FU{data: [{@base_seq_num, _}]} = fu
+      assert %FU{last_seq_num: @base_seq_num} = fu
     end
 
     test "parses packet sequence" do
@@ -45,6 +45,10 @@ defmodule Membrane.Element.RTP.H264.FUTest do
     test "returns error when first packet is not starting packet" do
       invalid_first_packet = <<0::5, 3::3>>
       assert {:error, :invalid_first_packet} == FU.parse(invalid_first_packet, 2, %FU{})
+    end
+
+    test "returns error when header is not valid" do
+      assert {:error, :packet_malformed} == FU.parse(<<0::2, 1::1, 1::5>>, 0, %FU{})
     end
   end
 end
