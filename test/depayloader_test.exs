@@ -6,26 +6,30 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
   alias Membrane.Element.RTP.H264.{Depayloader, FU}
   alias Membrane.Support.Formatters.{FUFactory, RBSPNaluFactory, STAPFactory}
 
+  @empty_state %Depayloader.State{}
+
   describe "Depayloader when processing data" do
     test "passes through packets with type 1..23 (RBSP types)" do
       data = RBSPNaluFactory.sample_nalu()
       buffer = %Buffer{payload: data}
 
-      assert {{:ok, actions}, %{}} = Depayloader.handle_process(:input, buffer, nil, %{})
+      assert {{:ok, actions}, @empty_state} =
+               Depayloader.handle_process(:input, buffer, nil, @empty_state)
+
       assert {:output, result} = Keyword.fetch!(actions, :buffer)
       assert %Buffer{payload: <<1::32, processed_data::binary()>>} = result
       assert processed_data == data
     end
 
     test "parses FU-A packets" do
-      assert {actions, state} =
+      assert {actions, @empty_state} =
                FUFactory.get_all_fixtures()
                |> Enum.map(&FUFactory.precede_with_fu_nal_header/1)
                ~> (enum -> Enum.zip(enum, 1..Enum.count(enum)))
                |> Enum.map(fn {elem, seq_num} ->
                  %Buffer{payload: elem, metadata: %{rtp: %{sequence_number: seq_num}}}
                end)
-               |> Enum.reduce(%Depayloader.State{}, fn buffer, prev_state ->
+               |> Enum.reduce(@empty_state, fn buffer, prev_state ->
                  Depayloader.handle_process(:input, buffer, nil, prev_state)
                  ~> (
                    {{:ok, redemand: :output}, %Depayloader.State{} = state} -> state
@@ -33,7 +37,6 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
                  )
                end)
 
-      assert state == %Depayloader.State{}
       assert {:output, %Buffer{payload: data}} = Keyword.fetch!(actions, :buffer)
       assert data == <<1::32, FUFactory.glued_fixtures()::binary()>>
     end
@@ -43,7 +46,8 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
 
       buffer = %Buffer{payload: STAPFactory.into_stap_unit(data)}
 
-      assert {{:ok, actions}, %{}} = Depayloader.handle_process(:input, buffer, nil, %{})
+      assert {{:ok, actions}, state} =
+               Depayloader.handle_process(:input, buffer, nil, @empty_state)
 
       actions
       |> Enum.zip(data)
@@ -53,6 +57,11 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
         assert nalu_hdr == STAPFactory.example_nalu_hdr()
       end)
     end
+
+    test "bytes unit results in error" do
+      {{:error, :not_supported_unit}, @empty_state} =
+        Depayloader.handle_demand(:input, nil, :bytes, @empty_state)
+    end
   end
 
   describe "Depayloader when handling events" do
@@ -60,17 +69,14 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
 
     test "drops current accumulator in case of discontinuity" do
       state = %Depayloader.State{pp_acc: %FU{}}
-
-      assert {:ok, %Depayloader.State{}} ==
-               Depayloader.handle_event(:input, %Discontinuity{}, nil, state)
+      assert {:ok, @empty_state} == Depayloader.handle_event(:input, %Discontinuity{}, nil, state)
     end
 
     test "passes through rest of events" do
-      assert {{:ok, actions}, state} =
-               Depayloader.handle_event(:input, %Discontinuity{}, nil, %Depayloader.State{})
+      assert {{:ok, actions}, @empty_state} =
+               Depayloader.handle_event(:input, %Discontinuity{}, nil, @empty_state)
 
       assert actions == [forward: %Discontinuity{}]
-      assert state == %Depayloader.State{}
     end
   end
 
@@ -92,7 +98,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
         metadata: %{rtp: %{sequence_number: 2}},
         payload: <<24>> <> <<35_402::16, 0, 0, 0, 0, 0, 0, 1, 1, 2>>
       }
-      ~> Depayloader.handle_process(:input, &1, nil, %Depayloader.State{})
+      ~> Depayloader.handle_process(:input, &1, nil, @empty_state)
       |> assert_error_occurred()
     end
 
@@ -101,14 +107,14 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
         metadata: %{rtp: %{sequence_number: 2}},
         payload: <<128::8>>
       }
-      ~> Depayloader.handle_process(:input, &1, nil, %Depayloader.State{})
+      ~> Depayloader.handle_process(:input, &1, nil, @empty_state)
       |> assert_error_occurred()
     end
 
     defp assert_error_occurred(result) do
       assert {{:ok, actions}, state} = result
       assert actions == [redemand: :output]
-      assert state == %Depayloader.State{}
+      assert state == @empty_state
     end
   end
 end

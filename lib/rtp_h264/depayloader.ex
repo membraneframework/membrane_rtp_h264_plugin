@@ -62,6 +62,8 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   def handle_demand(_output_pad, size, :buffers, _ctx, state),
     do: {{:ok, demand: {:input, size}}, state}
 
+  def handle_demand(_, _, :bytes, state), do: {{:error, :not_supported_unit}, state}
+
   @impl true
   def handle_event(:input, %Discontinuity{}, _context, %State{pp_acc: %FU{}} = state),
     do: {:ok, %State{state | pp_acc: nil}}
