@@ -2,9 +2,9 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
   use ExUnit.Case
   use Bunch
 
-  alias Membrane.Element.RTP.H264.{Depayloader, FU}
-  alias Membrane.Support.Formatters.{FUFactory, STAPFactory, RBSPNaluFactory}
   alias Membrane.Buffer
+  alias Membrane.Element.RTP.H264.{Depayloader, FU}
+  alias Membrane.Support.Formatters.{FUFactory, RBSPNaluFactory, STAPFactory}
 
   describe "Depayloader when processing data" do
     test "passes through packets with type 1..23 (RBSP types)" do
@@ -76,7 +76,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
 
   describe "Depayloader resets internal state in case of error and redemands" do
     test "when parsing Fragmentation Unit" do
-      %Membrane.Buffer{
+      %Buffer{
         metadata: %{rtp: %{sequence_number: 2}},
         payload:
           <<92, 1, 184, 105, 243, 121, 62, 233, 29, 109, 103, 237, 76, 39, 197, 20, 67, 149, 169,
@@ -88,7 +88,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
     end
 
     test "when parsing Single Time Agregation Unit" do
-      %Membrane.Buffer{
+      %Buffer{
         metadata: %{rtp: %{sequence_number: 2}},
         payload: <<24>> <> <<35_402::16, 0, 0, 0, 0, 0, 0, 1, 1, 2>>
       }
@@ -97,7 +97,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
     end
 
     test "when parsing not valid nalu" do
-      %Membrane.Buffer{
+      %Buffer{
         metadata: %{rtp: %{sequence_number: 2}},
         payload: <<128::8>>
       }

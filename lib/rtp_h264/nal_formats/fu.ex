@@ -4,12 +4,12 @@ defmodule Membrane.Element.RTP.H264.FU do
   """
   use Bunch
   alias Membrane.Element.RTP.H264.FU.Header
-  alias Membrane.Element.RTP.H264.{NALHeader, Depayloader}
+  alias Membrane.Element.RTP.H264.{Depayloader, NALHeader}
 
   defstruct [:last_seq_num, data: []]
 
   @type t :: %__MODULE__{
-          data: [{Depayloader.sequence_number(), binary()}],
+          data: [binary()],
           last_seq_num: nil | Depayloader.sequence_number()
         }
 
@@ -29,6 +29,7 @@ defmodule Membrane.Element.RTP.H264.FU do
           | {:error, :packet_malformed | :invalid_first_packet}
           | {:incomplete, t()}
   def parse(data, seq_num, acc) do
+    # actual code
     data
     |> Header.parse()
     ~>> ({:ok, {header, value}} -> do_parse(header, value, seq_num, acc))

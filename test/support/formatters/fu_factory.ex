@@ -13,11 +13,11 @@ defmodule Membrane.Support.Formatters.FUFactory do
   end
 
   @spec get_all_fixtures() :: [binary()]
-  def get_all_fixtures(), do: 1..@max_fixtures |> Enum.map(&get_fixture/1)
+  def get_all_fixtures, do: 1..@max_fixtures |> Enum.map(&get_fixture/1)
   @spec first() :: binary()
-  def first(), do: get_fixture(1)
+  def first, do: get_fixture(1)
   @spec last() :: binary()
-  def last(), do: get_fixture(@max_fixtures)
+  def last, do: get_fixture(@max_fixtures)
 
   @spec precede_with_fu_nal_header(binary()) :: <<_::8, _::_*8>>
   def precede_with_fu_nal_header(data) when is_binary(data), do: <<0::1, 2::2, 28::5>> <> data

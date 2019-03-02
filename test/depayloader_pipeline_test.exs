@@ -2,10 +2,10 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
   use ExUnit.Case
   use Bunch
 
-  alias Membrane.Support.DepayloaderTestingPipeline
-  alias Membrane.Support.Formatters.{STAPFactory, FUFactory}
-  alias Membrane.Event.EndOfStream
   alias Membrane.Buffer
+  alias Membrane.Event.EndOfStream
+  alias Membrane.Support.DepayloaderTestingPipeline
+  alias Membrane.Support.Formatters.{FUFactory, STAPFactory}
 
   describe "Depayloader in a pipeline" do
     test "does not crash when parsing staps" do

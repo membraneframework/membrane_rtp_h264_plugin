@@ -5,8 +5,8 @@ defmodule Membrane.Element.RTP.H264.StapATest do
   alias Membrane.Element.RTP.H264.StapA
   alias Membrane.Support.Formatters.STAPFactory
 
-  describe "Parser" do
-    test "properly decodes nal agregate" do
+  describe "Single Time Agregation Packet parser" do
+    test "properly decodes nal aggregate" do
       test_data = STAPFactory.sample_data()
 
       test_data

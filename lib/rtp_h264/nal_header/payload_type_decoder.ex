@@ -23,17 +23,17 @@ defmodule Membrane.Element.RTP.H264.NALHeader.PayloadTypeDecoder do
 
   @type supported_types :: :stap_a | :fu_a
   @type unsupported_types :: :stap_b | :mtap_16 | :mtap_24 | :fu_b
-  @type types :: :single_nalu | supported_types | unsupported_types
+  @type types :: :single_nalu | supported_types | unsupported_types | :reserved
 
   @spec decode_type(1..31) :: types()
   def decode_type(number)
 
-  def decode_type(number) when number in 1..23, do: :single_nalu
+  def decode_type(number) when number in 1..21, do: :single_nalu
   def decode_type(24), do: :stap_a
-  def decode_type(25), do: :stab_b
+  def decode_type(25), do: :stap_b
   def decode_type(26), do: :mtap_16
   def decode_type(27), do: :mtap_24
   def decode_type(28), do: :fu_a
   def decode_type(29), do: :fu_b
-  def decode_type(number) when number in 30..31, do: :reserved
+  def decode_type(number) when number in 30..31 or number in [22, 23], do: :reserved
 end

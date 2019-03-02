@@ -9,7 +9,7 @@ defmodule Membrane.Element.RTP.H264.FU.HeaderTest do
     end
 
     test "returns parsed data for valid packets" do
-      # First packet, middle packet, end packet
+      # First packet, middle packet, last packet
       combinations = [{1, 0}, {0, 0}, {0, 1}]
 
       combinations

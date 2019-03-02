@@ -11,9 +11,9 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      description: "Membrane Multimedia Framework (RtpH264 Element)",
+      description: "Membrane Multimedia Framework (RTP H264 Element)",
       package: package(),
-      name: "Membrane Element: RtpH264",
+      name: "Membrane Element: H264",
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membraneframework.org",
@@ -57,7 +57,8 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       {:bunch, "~> 0.2"},
       {:membrane_caps_rtp, github: "membraneframework/membrane-caps-rtp"},
       {:membrane_caps_video_h264, "~> 0.1"},
-      {:membrane_loggers, "~> 0.2.0"}
+      {:membrane_loggers, "~> 0.2.0"},
+      {:gradualixir, github: "overminddl1/gradualixir", ref: "master"}
     ]
   end
 end

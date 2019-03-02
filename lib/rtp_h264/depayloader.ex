@@ -6,8 +6,11 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   use Bunch
   use Membrane.Log
 
+  alias Membrane.Buffer
   alias Membrane.Caps.{RTP, Video.H264}
   alias Membrane.Event.Discontinuity
+  alias Membrane.Element.RTP.H264.{FU, NALHeader, StapA}
+  alias NALHeader.PayloadTypeDecoder
 
   @frame_prefix <<1::32>>
   @type sequence_number :: 0..65_535
@@ -20,11 +23,6 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
                    caps: {RTP, payload_type: :dynamic},
                    demand_unit: :buffers
                  ]
-
-  alias Membrane.Element.RTP.H264.NALHeader
-  alias NALHeader.PayloadTypeDecoder
-  alias Membrane.Element.RTP.H264.{FU, StapA}
-  alias Membrane.Buffer
 
   defmodule State do
     @moduledoc false
