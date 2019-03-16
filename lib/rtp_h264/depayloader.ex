@@ -9,8 +9,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   alias Membrane.Buffer
   alias Membrane.Caps.{RTP, Video.H264}
   alias Membrane.Event.Discontinuity
-  alias Membrane.Element.RTP.H264.{FU, NALHeader, StapA}
-  alias NALHeader.PayloadTypeDecoder
+  alias Membrane.Element.RTP.H264.{FU, NAL, StapA}
 
   @frame_prefix <<1::32>>
   @type sequence_number :: 0..65_535
@@ -26,8 +25,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
   defmodule State do
     @moduledoc false
-    # pp_acc, stands for packet parser accumulator
-    defstruct pp_acc: nil
+    defstruct parser_acc: nil
   end
 
   def handle_init(_) do
@@ -41,9 +39,9 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
   @impl true
   def handle_process(_pad, %Buffer{payload: payload} = buffer, _ctx, state) do
-    NALHeader.parse_unit_header(payload)
+    NAL.Header.parse_unit_header(payload)
     ~>> ({:ok, {header, rest}} ->
-           case PayloadTypeDecoder.decode_type(header.type) do
+           case NAL.Header.decode_type(header) do
              :single_nalu ->
                buffer_output(payload, buffer)
 
@@ -53,9 +51,9 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
              :stap_a ->
                handle_stap(rest, buffer)
            end)
-    ~>> ({:error, _} ->
-           log_malformed_buffer(buffer)
-           {{:ok, redemand: :output}, %State{state | pp_acc: nil}})
+    ~>> ({:error, reason} ->
+           log_malformed_buffer(buffer, reason)
+           {{:ok, redemand: :output}, %State{state | parser_acc: nil}})
   end
 
   @impl true
@@ -65,8 +63,8 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   def handle_demand(_, _, :bytes, state), do: {{:error, :not_supported_unit}, state}
 
   @impl true
-  def handle_event(:input, %Discontinuity{}, _context, %State{pp_acc: %FU{}} = state),
-    do: {:ok, %State{state | pp_acc: nil}}
+  def handle_event(:input, %Discontinuity{} = event, _context, %State{parser_acc: %FU{}} = state),
+    do: {{:ok, forward: event}, %State{state | parser_acc: nil}}
 
   def handle_event(_pad, event, _context, state), do: {{:ok, forward: event}, state}
 
@@ -81,17 +79,15 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
         buffer_output(data, buffer)
 
       {:incomplete, fu} ->
-        {{:ok, redemand: :output}, %State{state | pp_acc: fu}}
+        {{:ok, redemand: :output}, %State{state | parser_acc: fu}}
     )
   end
 
   defp handle_stap(data, buffer) do
-    data
-    |> StapA.parse()
-    ~>> ({:ok, result} ->
-           result
-           |> Enum.flat_map(&action_from_data(&1, buffer))
-           ~> {{:ok, &1}, %State{}})
+    with {:ok, result} <- StapA.parse(data) do
+      result = Enum.flat_map(result, &action_from_data(&1, buffer))
+      {{:ok, result}, %State{}}
+    end
   end
 
   defp buffer_output(data, buffer),
@@ -105,14 +101,15 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
   defp add_prefix(stream), do: @frame_prefix <> stream
 
-  defp map_state_to_fu(%State{pp_acc: %FU{} = fu}), do: fu
+  defp map_state_to_fu(%State{parser_acc: %FU{} = fu}), do: fu
   defp map_state_to_fu(_), do: %FU{}
 
-  defp log_malformed_buffer(%Buffer{metadata: metadata}) do
+  defp log_malformed_buffer(%Buffer{metadata: metadata}, reason) do
     %{rtp: %{sequence_number: seq_num}} = metadata
 
     warn("""
     An error occurred while parsing RTP frame with sequence_number: #{seq_num}
+    Reason: #{reason}
     """)
   end
 end

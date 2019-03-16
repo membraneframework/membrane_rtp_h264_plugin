@@ -4,7 +4,7 @@ defmodule Membrane.Element.RTP.H264.FU do
   """
   use Bunch
   alias Membrane.Element.RTP.H264.FU.Header
-  alias Membrane.Element.RTP.H264.{Depayloader, NALHeader}
+  alias Membrane.Element.RTP.H264.{Depayloader, NAL}
 
   defstruct [:last_seq_num, data: []]
 
@@ -25,34 +25,35 @@ defmodule Membrane.Element.RTP.H264.FU do
   """
 
   @spec parse(binary(), Depayloader.sequence_number(), t) ::
-          {:ok, {binary(), NALHeader.type()}}
+          {:ok, {binary(), NAL.Header.type()}}
           | {:error, :packet_malformed | :invalid_first_packet}
           | {:incomplete, t()}
   def parse(data, seq_num, acc) do
-    # actual code
-    data
-    |> Header.parse()
-    ~>> ({:ok, {header, value}} -> do_parse(header, value, seq_num, acc))
+    with {:ok, {header, value}} <- Header.parse(data) do
+      do_parse(header, value, seq_num, acc)
+    end
   end
 
   defp do_parse(header, data, seq_num, acc)
-
-  defp do_parse(%Header{end_bit: true, type: type}, data, seq_num, %__MODULE__{
-         data: acc,
-         last_seq_num: last
-       })
-       when next?(last, seq_num) do
-    [data | acc]
-    |> Enum.reverse()
-    |> Enum.join()
-    ~> {:ok, {&1, type}}
-  end
 
   defp do_parse(%Header{start_bit: true}, data, seq_num, acc),
     do: %__MODULE__{acc | data: [data], last_seq_num: seq_num} ~> {:incomplete, &1}
 
   defp do_parse(%Header{start_bit: false}, _, _, %__MODULE__{last_seq_num: nil}),
     do: {:error, :invalid_first_packet}
+
+  defp do_parse(%Header{end_bit: true, type: type}, data, seq_num, %__MODULE__{
+         data: acc,
+         last_seq_num: last
+       })
+       when next?(last, seq_num) do
+    result =
+      [data | acc]
+      |> Enum.reverse()
+      |> Enum.join()
+
+    {:ok, {result, type}}
+  end
 
   defp do_parse(_header, data, seq_num, %__MODULE__{data: acc, last_seq_num: last} = fu)
        when next?(last, seq_num),

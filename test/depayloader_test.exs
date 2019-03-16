@@ -68,8 +68,12 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
     alias Membrane.Event.Discontinuity
 
     test "drops current accumulator in case of discontinuity" do
-      state = %Depayloader.State{pp_acc: %FU{}}
-      assert {:ok, @empty_state} == Depayloader.handle_event(:input, %Discontinuity{}, nil, state)
+      state = %Depayloader.State{parser_acc: %FU{}}
+
+      {{:ok, actions}, @empty_state} =
+        Depayloader.handle_event(:input, %Discontinuity{}, nil, state)
+
+      assert actions == [forward: %Discontinuity{}]
     end
 
     test "passes through rest of events" do
@@ -89,7 +93,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
             61, 178, 147, 249, 138, 15, 81, 60, 59, 234, 117, 32, 55, 245, 115, 49, 165, 19, 87,
             99, 15, 255, 51, 62, 243, 41, 9>>
       }
-      ~> Depayloader.handle_process(:input, &1, nil, %Depayloader.State{pp_acc: %FU{}})
+      ~> Depayloader.handle_process(:input, &1, nil, %Depayloader.State{parser_acc: %FU{}})
       |> assert_error_occurred()
     end
 

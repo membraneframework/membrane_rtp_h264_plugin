@@ -23,7 +23,7 @@ defmodule Membrane.Element.RTP.H264.FUTest do
         |> Enum.zip(1..Enum.count(fixtures))
         |> Enum.reduce(%FU{}, fn {elem, seq_num}, acc ->
           FU.parse(elem, seq_num, acc)
-          ~>> ({_command, value} -> value)
+          ~> ({_command, value} -> value)
         end)
 
       expected_result = FUFactory.glued_fixtures() ~> (<<_::8, rest::binary()>> -> rest)

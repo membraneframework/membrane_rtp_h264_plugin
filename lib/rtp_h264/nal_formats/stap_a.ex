@@ -31,9 +31,9 @@ defmodule Membrane.Element.RTP.H264.StapA do
   """
   @spec parse(binary()) :: {:ok, [binary()]} | {:error, :packet_malformed}
   def parse(data) do
-    data
-    |> parse_batch()
-    ~>> ({:ok, value} -> {:ok, Enum.reverse(value)})
+    with {:ok, value} <- parse_batch(data) do
+      {:ok, Enum.reverse(value)}
+    end
   end
 
   defp parse_batch(data, acc \\ [])

@@ -12,25 +12,25 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
   ```
   """
 
-  alias Membrane.Element.RTP.H264.NALHeader
+  alias Membrane.Element.RTP.H264.NAL
 
   @typedoc """
-  SHOULD be set to true only in the first packet in a sequence.
+  MUST be set to true only in the first packet in a sequence.
   """
   @type start_flag :: boolean()
 
   @typedoc """
-  SHOULD be set to true only in the last packet in a sequence.
+  MUST be set to true only in the last packet in a sequence.
   """
   @type end_flag :: boolean()
 
   @enforce_keys [:type]
-  defstruct start_bit: false, end_bit: false, reserved: false, type: 0
+  defstruct start_bit: false, end_bit: false, type: 0
 
   @type t :: %__MODULE__{
           start_bit: start_flag(),
           end_bit: end_flag(),
-          type: NALHeader.type()
+          type: NAL.Header.type()
         }
 
   defguardp valid_frame_boundary(start, finish) when start != 1 or finish != 1
@@ -38,13 +38,11 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
   @doc """
   Parses Fragmentation Unit Header
 
-  Returns a `{:ok, header}` tuple if parsing was successful.
-
   It will fail if the Start bit and End bit are both set to one in the
   same Fragmentation Unit Header, because a fragmented NAL unit
   MUST NOT be transmitted in one FU.
   """
-  @spec parse(binary()) :: {:error, :packet_malformed} | {:ok, {t(), binary()}}
+  @spec parse(data :: binary()) :: {:error, :packet_malformed} | {:ok, {t(), nal :: binary()}}
   def parse(<<start::1, finish::1, 0::1, nal_type::5, rest::binary>>)
       when nal_type in 1..23 and valid_frame_boundary(start, finish) do
     header = %__MODULE__{
@@ -56,5 +54,5 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
     {:ok, {header, rest}}
   end
 
-  def parse(<<_::binary>>), do: {:error, :packet_malformed}
+  def parse(_), do: {:error, :packet_malformed}
 end

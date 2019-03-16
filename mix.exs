@@ -57,8 +57,7 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       {:bunch, "~> 0.2"},
       {:membrane_caps_rtp, github: "membraneframework/membrane-caps-rtp"},
       {:membrane_caps_video_h264, "~> 0.1"},
-      {:membrane_loggers, "~> 0.2.0"},
-      {:gradualixir, github: "overminddl1/gradualixir", ref: "master"}
+      {:membrane_loggers, "~> 0.2.0"}
     ]
   end
 end

@@ -15,7 +15,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
       |> Enum.map(&%Membrane.Buffer{payload: &1})
       |> generator_from_data()
       |> DepayloaderTestingPipeline.start_pipeline()
-      ~>> ({:ok, pipeline} -> Membrane.Pipeline.play(pipeline))
+      ~> ({:ok, pipeline} -> Membrane.Pipeline.play(pipeline))
 
       STAPFactory.sample_data()
       |> Enum.each(fn elem ->
@@ -37,7 +37,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
       |> Enum.map(fn {data, seq_num} -> into_rtp_buffer(data, seq_num) end)
       |> generator_from_data()
       |> DepayloaderTestingPipeline.start_pipeline()
-      ~>> ({:ok, pid} -> Membrane.Pipeline.play(pid))
+      ~> ({:ok, pid} -> Membrane.Pipeline.play(pid))
 
       Enum.each(data_base, fn _ ->
         assert_receive %Buffer{payload: data}
