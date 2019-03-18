@@ -20,8 +20,8 @@ defmodule Membrane.Element.RTP.H264.FU do
 
   If a packet that is being parsed is not considered last then a `{:incomplete, t()}`
   tuple  will be returned.
-  In case of last packet `{:ok, {type, data}}` tuple will be returned, where data is `NAL Unit`
-  created by concatenating subsequent Fragmentation Units.
+  In case of last packet `{:ok, {type, data}}` tuple will be returned, where data
+  is `NAL Unit` created by concatenating subsequent Fragmentation Units.
   """
 
   @spec parse(binary(), Depayloader.sequence_number(), t) ::
@@ -37,7 +37,7 @@ defmodule Membrane.Element.RTP.H264.FU do
   defp do_parse(header, data, seq_num, acc)
 
   defp do_parse(%Header{start_bit: true}, data, seq_num, acc),
-    do: %__MODULE__{acc | data: [data], last_seq_num: seq_num} ~> {:incomplete, &1}
+    do: {:incomplete, %__MODULE__{acc | data: [data], last_seq_num: seq_num}}
 
   defp do_parse(%Header{start_bit: false}, _, _, %__MODULE__{last_seq_num: nil}),
     do: {:error, :invalid_first_packet}

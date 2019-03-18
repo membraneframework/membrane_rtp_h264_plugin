@@ -50,8 +50,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
     actions = Enum.map(data, fn element -> {:buffer, {:output, element}} end)
 
     fn cnt, size ->
-      cnt
-      |> provided(that: cnt != 0, else: actions)
+      if(cnt != 0, do: cnt, else: actions)
       |> Enum.split(size)
       ~>> ({to_send, []} -> {to_send ++ [{:event, {:output, %EndOfStream{}}}], []})
     end

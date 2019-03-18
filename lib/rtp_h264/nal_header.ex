@@ -59,7 +59,6 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   @spec parse_unit_header(binary()) :: {:error, :malformed_data} | {:ok, {t(), binary()}}
   def parse_unit_header(raw_nal)
 
-  # If first bit is set to 0 packet is flagged as malformed
   def parse_unit_header(<<0::1, nri::2, type::5, rest::binary()>>) do
     nal = %__MODULE__{
       nal_ref_idc: nri,
@@ -69,6 +68,7 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
     {:ok, {nal, rest}}
   end
 
+  # If first bit is not set to 0 packet is flagged as malformed
   def parse_unit_header(_), do: {:error, :malformed_data}
 
   @type supported_types :: :stap_a | :fu_a
