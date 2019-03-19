@@ -1,4 +1,4 @@
-# Membrane Multimedia Framework: RtpH264
+# Membrane Multimedia Framework: RTP H264
 
 This package provides elements that can be used for depayloading H.264 video.
 

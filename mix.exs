@@ -17,7 +17,10 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membraneframework.org",
-      deps: deps()
+      deps: deps(),
+      aliases: [
+        credo: "credo --ignore Credo.Check.Refactor.PipeChainStart"
+      ]
     ]
   end
 
@@ -45,7 +48,10 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       links: %{
         "GitHub" => @github_url,
         "Membrane Framework Homepage" => "https://membraneframework.org"
-      }
+      },
+      nest_modules_by_prefix: [
+        Membrane.Element.RTP.H264
+      ]
     ]
   end
 
@@ -57,7 +63,8 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       {:bunch, "~> 1.0"},
       {:membrane_caps_rtp, github: "membraneframework/membrane-caps-rtp"},
       {:membrane_caps_video_h264, "~> 0.1"},
-      {:membrane_loggers, "~> 0.2.3"}
+      {:membrane_loggers, "~> 0.2.3"},
+      {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false}
     ]
   end
 end
