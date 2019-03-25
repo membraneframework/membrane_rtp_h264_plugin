@@ -49,6 +49,10 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   """
   @type type :: 1..31
 
+  @type supported_types :: :stap_a | :fu_a
+  @type unsupported_types :: :stap_b | :mtap_16 | :mtap_24 | :fu_b
+  @type types :: :single_nalu | supported_types | unsupported_types | :reserved
+
   defstruct [:nal_ref_idc, :type]
 
   @type t :: %__MODULE__{
@@ -70,10 +74,6 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
 
   # If first bit is not set to 0 packet is flagged as malformed
   def parse_unit_header(_), do: {:error, :malformed_data}
-
-  @type supported_types :: :stap_a | :fu_a
-  @type unsupported_types :: :stap_b | :mtap_16 | :mtap_24 | :fu_b
-  @type types :: :single_nalu | supported_types | unsupported_types | :reserved
 
   @doc """
   Parses type stored in NAL Header

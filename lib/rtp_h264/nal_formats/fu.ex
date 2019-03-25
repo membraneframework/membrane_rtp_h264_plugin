@@ -13,7 +13,7 @@ defmodule Membrane.Element.RTP.H264.FU do
           last_seq_num: nil | Depayloader.sequence_number()
         }
 
-  defguardp next?(last_seq_num, next_seq_num) when last_seq_num + 1 == next_seq_num
+  defguardp is_next(last_seq_num, next_seq_num) when last_seq_num + 1 == next_seq_num
 
   @doc """
   Parses H264 Fragmentation Unit
@@ -46,7 +46,7 @@ defmodule Membrane.Element.RTP.H264.FU do
          data: acc,
          last_seq_num: last
        })
-       when next?(last, seq_num) do
+       when is_next(last, seq_num) do
     result =
       [data | acc]
       |> Enum.reverse()
@@ -56,7 +56,7 @@ defmodule Membrane.Element.RTP.H264.FU do
   end
 
   defp do_parse(_header, data, seq_num, %__MODULE__{data: acc, last_seq_num: last} = fu)
-       when next?(last, seq_num),
+       when is_next(last, seq_num),
        do: {:incomplete, %__MODULE__{fu | data: [data | acc], last_seq_num: seq_num}}
 
   defp do_parse(_, _, _, _), do: {:error, :missing_packet}

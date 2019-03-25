@@ -38,18 +38,9 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
   @impl true
   def handle_process(_pad, %Buffer{payload: payload} = buffer, _ctx, state) do
-    with {:ok, {header, rest}} <- NAL.Header.parse_unit_header(payload),
-         {{:ok, _}, _} = action <-
-           (case NAL.Header.decode_type(header) do
-              :single_nalu ->
-                buffer_output(payload, buffer)
-
-              :fu_a ->
-                handle_fu(header, rest, buffer, state)
-
-              :stap_a ->
-                handle_stap(rest, buffer)
-            end) do
+    with {:ok, {header, _} = nal} <- NAL.Header.parse_unit_header(payload),
+         unit_type <- NAL.Header.decode_type(header),
+         {{:ok, _}, _} = action <- handle_unit_type(unit_type, nal, buffer, state) do
       action
     else
       {:error, reason} ->
@@ -70,14 +61,18 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
   def handle_event(_pad, event, _context, state), do: {{:ok, forward: event}, state}
 
-  defp handle_fu(header, data, %Buffer{metadata: metadata} = buffer, state) do
-    %{rtp: %{sequence_number: seq_num}} = metadata
+  defp handle_unit_type(:single_nalu, _nal, buffer, state) do
+    buffer_output(buffer.payload, buffer, state)
+  end
+
+  defp handle_unit_type(:fu_a, {header, data}, buffer, state) do
+    %Buffer{metadata: %{rtp: %{sequence_number: seq_num}}} = buffer
 
     case FU.parse(data, seq_num, map_state_to_fu(state)) do
       {:ok, {data, type}} ->
         header = <<0::1, header.nal_ref_idc::2, type::5>>
         data = header <> data
-        buffer_output(data, buffer)
+        buffer_output(data, buffer, %State{state | parser_acc: nil})
 
       {:incomplete, fu} ->
         {{:ok, redemand: :output}, %State{state | parser_acc: fu}}
@@ -87,15 +82,15 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
     end
   end
 
-  defp handle_stap(data, buffer) do
+  defp handle_unit_type(:stap_a, {_, data}, buffer, state) do
     with {:ok, result} <- StapA.parse(data) do
-      result = Enum.flat_map(result, &action_from_data(&1, buffer))
-      {{:ok, result}, %State{}}
+      buffers = Enum.map(result, &%Buffer{buffer | payload: add_prefix(&1)})
+      {{:ok, buffer: {:output, buffers}}, state}
     end
   end
 
-  defp buffer_output(data, buffer),
-    do: {{:ok, action_from_data(data, buffer)}, %State{}}
+  defp buffer_output(data, buffer, state),
+    do: {{:ok, action_from_data(data, buffer)}, state}
 
   defp action_from_data(data, buffer) do
     [buffer: {:output, %Buffer{buffer | payload: add_prefix(data)}}]
