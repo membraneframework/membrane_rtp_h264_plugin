@@ -60,7 +60,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
 
     test "bytes unit results in error" do
       {{:error, :not_supported_unit}, @empty_state} =
-        Depayloader.handle_demand(:input, nil, :bytes, @empty_state)
+        Depayloader.handle_demand(:input, nil, :bytes, nil, @empty_state)
     end
   end
 
