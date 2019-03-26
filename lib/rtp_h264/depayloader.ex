@@ -37,7 +37,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_process(_pad, %Buffer{payload: payload} = buffer, _ctx, state) do
+  def handle_process(:input, %Buffer{payload: payload} = buffer, _ctx, state) do
     with {:ok, {header, _} = nal} <- NAL.Header.parse_unit_header(payload),
          unit_type <- NAL.Header.decode_type(header),
          {{:ok, _}, _} = action <- handle_unit_type(unit_type, nal, buffer, state) do
@@ -50,16 +50,16 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_demand(_output_pad, size, :buffers, _ctx, state),
+  def handle_demand(:output, size, :buffers, _ctx, state),
     do: {{:ok, demand: {:input, size}}, state}
 
-  def handle_demand(_, _, :bytes, _ctx, state), do: {{:error, :not_supported_unit}, state}
+  def handle_demand(:output, _, :bytes, _ctx, state), do: {{:error, :not_supported_unit}, state}
 
   @impl true
   def handle_event(:input, %Discontinuity{} = event, _context, %State{parser_acc: %FU{}} = state),
     do: {{:ok, forward: event}, %State{state | parser_acc: nil}}
 
-  def handle_event(_pad, event, _context, state), do: {{:ok, forward: event}, state}
+  def handle_event(:input, event, _context, state), do: {{:ok, forward: event}, state}
 
   defp handle_unit_type(:single_nalu, _nal, buffer, state) do
     buffer_output(buffer.payload, buffer, state)
@@ -96,7 +96,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
     [buffer: {:output, %Buffer{buffer | payload: add_prefix(data)}}]
   end
 
-  defp add_prefix(stream), do: @frame_prefix <> stream
+  defp add_prefix(data), do: @frame_prefix <> data
 
   defp map_state_to_fu(%State{parser_acc: %FU{} = fu}), do: fu
   defp map_state_to_fu(_), do: %FU{}
