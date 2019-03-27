@@ -48,7 +48,6 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   RBSP types are described in detail [here](https://yumichan.net/video-processing/video-compression/introduction-to-h264-nal-unit)
   """
   @type type :: 1..31
-
   @type supported_types :: :stap_a | :fu_a
   @type unsupported_types :: :stap_b | :mtap_16 | :mtap_24 | :fu_b
   @type types :: :single_nalu | supported_types | unsupported_types | :reserved
