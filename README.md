@@ -1,4 +1,4 @@
-# Membrane Multimedia Framework: RtpH264
+# Membrane Multimedia Framework: RTP H264
 
 This package provides elements that can be used for depayloading H.264 video.
 
@@ -7,7 +7,7 @@ It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 ## Supported packetization modes
 
 This package currently supports only
-Single Nal Unit Mode and Non-Interleaved Mode packetization modes.
+Single Nal Unit Mode and Non-Interleaved packetization modes.
 Interleaved mode is not currently supported.
 
 ## Abbreviations
