@@ -13,14 +13,12 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   @frame_prefix <<1::32>>
   @type sequence_number :: 0..65_535
 
-  def_output_pads output: [
-                    caps: {H264, stream_format: :byte_stream}
-                  ]
+  def_output_pad :output,
+    caps: {H264, stream_format: :byte_stream}
 
-  def_input_pads input: [
-                   caps: {RTP, payload_type: :dynamic},
-                   demand_unit: :buffers
-                 ]
+  def_input_pad :input,
+    caps: {RTP, payload_type: :dynamic},
+    demand_unit: :buffers
 
   defmodule State do
     @moduledoc false
