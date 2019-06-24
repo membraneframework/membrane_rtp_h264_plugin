@@ -57,9 +57,10 @@ defmodule Membrane.Element.RTP.H264.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 0.3"},
+      {:membrane_core,
+       github: "membraneframework/membrane-core", branch: "new-testing-api", override: true},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
       {:bunch, "~> 1.0"},
       {:membrane_caps_rtp, github: "membraneframework/membrane-caps-rtp"},
       {:membrane_caps_video_h264, "~> 0.1"},

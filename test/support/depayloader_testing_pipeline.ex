@@ -5,12 +5,12 @@ defmodule Membrane.Support.DepayloaderTestingPipeline do
   alias Testing.Pipeline
 
   @spec start_pipeline(any()) :: :ignore | {:error, any()} | {:ok, pid()}
-  def start_pipeline(generator) do
+  def start_pipeline(data) do
     options = %Pipeline.Options{
       elements: [
-        source: %Testing.Source{actions_generator: generator},
+        source: %Testing.Source{output: data},
         depayloader: Depayloader,
-        sink: %Testing.Sink{target: self()}
+        sink: %Testing.Sink{}
       ]
     }
 
