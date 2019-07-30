@@ -1,6 +1,5 @@
 defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
   use ExUnit.Case
-  use Bunch
 
   import Membrane.Testing.Assertions
 
@@ -38,7 +37,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
         data_base
         |> Enum.flat_map(fn _ -> FUFactory.get_all_fixtures() end)
         |> Enum.map(fn binary -> <<0::1, 2::2, 28::5>> <> binary end)
-        ~> (list -> Enum.zip(list, 1..Enum.count(list)))
+        |> Enum.with_index()
         |> Enum.map(fn {data, seq_num} -> into_rtp_buffer(data, seq_num) end)
         |> generator_from_data()
         |> DepayloaderTestingPipeline.start_pipeline()
