@@ -2,7 +2,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   @moduledoc """
   Depayloads H264 RTP payloads into H264 NAL Units.
   """
-  use Membrane.Element.Base.Filter
+  use Membrane.Filter
   use Membrane.Log
 
   alias Membrane.Buffer
