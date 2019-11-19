@@ -36,7 +36,7 @@ Interleaved mode is not currently supported.
 * TS:         Timestamp
 * VCL:        Video Coding Layer
 * VUI:        Video Usability Information
-  
+
 
 ## Installation
 
@@ -45,7 +45,7 @@ The package can be installed by adding `membrane_element_rtp_h264` to your list 
 ```elixir
 def deps do
   [
-    {:membrane_element_rtp_h264, "~> 0.1.0"}
+    {:membrane_element_rtp_h264, "~> 0.2.0"}
   ]
 end
 ```
