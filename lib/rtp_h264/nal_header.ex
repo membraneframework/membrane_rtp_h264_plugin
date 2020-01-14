@@ -88,4 +88,19 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   defp do_decode_type(28), do: :fu_a
   defp do_decode_type(29), do: :fu_b
   defp do_decode_type(number) when number in 30..31 or number in [22, 23], do: :reserved
+
+  @doc """
+  Encodes given NAL type
+  """
+  @spec encode_type(types()) :: type()
+  def encode_type(type), do: do_encode_type(type)
+
+  defp do_encode_type(:single_nalu), do: 1
+  defp do_encode_type(:stap_a), do: 24
+  defp do_encode_type(:stap_b), do: 25
+  defp do_encode_type(:mtap_16), do: 26
+  defp do_encode_type(:mtap_24), do: 27
+  defp do_encode_type(:fu_a), do: 28
+  defp do_encode_type(:fu_b), do: 29
+  defp do_encode_type(:reserved), do: 30
 end
