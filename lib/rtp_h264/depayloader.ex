@@ -38,8 +38,8 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   def handle_process(:input, %Buffer{payload: payload} = buffer, _ctx, state) do
     with {:ok, {header, _} = nal} <- NAL.Header.parse_unit_header(payload),
          unit_type = NAL.Header.decode_type(header),
-         {{:ok, _actions}, _state} = action <- handle_unit_type(unit_type, nal, buffer, state) do
-      action
+         {{:ok, actions}, new_state} <- handle_unit_type(unit_type, nal, buffer, state) do
+      {{:ok, actions ++ [redemand: :output]}, new_state}
     else
       {:error, reason} ->
         log_malformed_buffer(buffer, reason)
@@ -48,8 +48,9 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_demand(:output, size, :buffers, _ctx, state),
-    do: {{:ok, demand: {:input, size}}, state}
+  def handle_demand(:output, size, :buffers, _ctx, state) do
+    {{:ok, demand: {:input, size}}, state}
+  end
 
   def handle_demand(:output, _, :bytes, _ctx, state), do: {{:error, :not_supported_unit}, state}
 
@@ -73,7 +74,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
         buffer_output(data, buffer, %State{state | parser_acc: nil})
 
       {:incomplete, fu} ->
-        {{:ok, redemand: :output}, %State{state | parser_acc: fu}}
+        {{:ok, []}, %State{state | parser_acc: fu}}
 
       {:error, _} = error ->
         error
