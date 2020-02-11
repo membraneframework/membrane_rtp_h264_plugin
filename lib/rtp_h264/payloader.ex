@@ -12,15 +12,28 @@ defmodule Membrane.Element.RTP.H264.Payloader do
 
   @frame_prefix_shorter <<1::24>>
   @frame_prefix_longer <<1::32>>
-  @single_min_size 1024
-  @prefered_single_size 2000
-  @single_max_size 6500
-  # @prefered_single_size 8192
-  # @single_max_size 16_384
+  @single_min_size 512
+  @preferred_size_size 1024
+  @single_max_size 16_384
   @max_sequence_number 65_535
   @max_timestamp 4_294_967_296
 
-  @type sequence_number :: 0..65_535
+  @typedoc """
+  Options that can be passed when creating Payloader.
+  Available options are:
+  * `min_single_size` - minimal byte size for Single NALU. Units smaller than it will be 
+    aggregated in STAP-A payloads.
+  * `max_single_size` - maximal byte size for Single NALU. Units bigger than it will be 
+    fragmented into FU-A payloads.
+  * `preferred_size_size` - byte size which will be a target for Payloader. During fragmentation
+  into FU-A payloads, every (but last) payload will be of preferred size. During aggregation into
+  STAP-A payloads Payloader will send payload if it exceeds preferred size.
+  """
+  @type options_t :: %{
+          min_single_size: non_neg_integer() | nil,
+          max_single_size: pos_integer() | nil,
+          preferred_size_size: pos_integer() | nil
+        }
 
   def_output_pad :output,
     caps: {RTP, payload_type: :dynamic}
@@ -33,16 +46,28 @@ defmodule Membrane.Element.RTP.H264.Payloader do
     @moduledoc false
     defstruct [
       :rtp_sequence_number,
-      parser_acc: <<>>,
-      units_in_acc: 0,
+      :single_max_size,
+      :single_min_size,
+      :preferred_size_size,
+      parser_acc: [],
+      acc_byte_size: 0,
       stap_a_nri: 0,
       stap_a_reserved: 0,
-      metadata: %{}
+      metadata: %{timestamp: 4_294_967_296}
     ]
   end
 
-  def handle_init(_) do
-    {:ok, %State{rtp_sequence_number: Enum.random(0..@max_sequence_number)}}
+  @spec handle_init(options :: options_t() | nil) :: {:ok, struct()}
+  def handle_init(options) do
+    options = options || %{}
+
+    {:ok,
+     %State{
+       rtp_sequence_number: Enum.random(0..@max_sequence_number),
+       single_min_size: Map.get(options, :single_min_size, @single_min_size),
+       single_max_size: Map.get(options, :single_max_size, @single_max_size),
+       preferred_size_size: Map.get(options, :preferred_size_size, @preferred_size_size)
+     }}
   end
 
   @impl true
@@ -57,24 +82,23 @@ defmodule Membrane.Element.RTP.H264.Payloader do
         _ctx,
         state
       ) do
-    type = get_unit_type(payload)
+    type = get_unit_type(payload, state)
 
     with rtp_metadata = Map.get(metadata, :rtp, %{}),
          {{:ok, stap_a_buffer}, state} <- handle_accumulator(type, buffer, state),
-         state = update_state_metadata(type, rtp_metadata, state),
+         state = %State{state | metadata: rtp_metadata},
          {{:ok, actions}, state} <- handle_unit_type(type, payload, state) |> unify_result do
       {{:ok, stap_a_buffer ++ actions}, state}
     else
       {:ok, state} ->
         rtp_metadata = Map.get(metadata, :rtp, %{timestamp: @max_timestamp})
-        state = update_state_metadata(type, rtp_metadata, state)
+        state = %State{state | metadata: rtp_metadata}
         handle_unit_type(type, payload, state)
     end
   end
 
   @impl true
   def handle_demand(:output, size, :buffers, _ctx, state) do
-    IO.puts("demand #{size}")
     {{:ok, demand: {:input, size}}, state}
   end
 
@@ -86,42 +110,43 @@ defmodule Membrane.Element.RTP.H264.Payloader do
   @impl true
   def handle_end_of_stream(:input, _context, state), do: flush_accumulator(state)
 
-  defp get_unit_type(payload) do
+  defp get_unit_type(payload, state) do
     size = byte_size(payload)
 
     cond do
-      size < @single_min_size -> :stap_a
-      size < @single_max_size -> :single_nalu
+      size < state.single_min_size -> :stap_a
+      size < state.single_max_size -> :single_nalu
       true -> :fu_a
     end
   end
 
-  defp update_state_metadata(:stap_a, metadata, state) do
-    if state.units_in_acc != 0 do
-      metadata = Map.put(metadata, :timestamp, min(metadata.timestamp, state.metadata.timestamp))
-      %State{state | metadata: metadata}
+  defp handle_accumulator(:stap_a, buffer, %State{metadata: %{timestamp: timestamp}} = state) do
+    if buffer.metadata.rtp.timestamp == timestamp do
+      {:ok, state}
     else
-      %State{state | metadata: metadata}
+      flush_accumulator(state)
     end
   end
 
-  defp update_state_metadata(_type, metadata, state), do: %State{state | metadata: metadata}
-
-  defp handle_accumulator(:stap_a, _buffer, state), do: {:ok, state}
   defp handle_accumulator(_type, _buffer, state), do: flush_accumulator(state)
 
   defp flush_accumulator(state) do
+    acc = state.parser_acc
+
     cond do
-      state.parser_acc == <<>> ->
+      acc == [] ->
         {:ok, state}
 
-      state.units_in_acc == 1 ->
-        state.parser_acc
-        |> delete_stap_a_size
-        |> action_from_data(state)
+      length(acc) == 1 ->
+        state = clear_parser_acc(state)
+        acc |> hd |> delete_stap_a_size |> action_from_data(state)
 
       true ->
-        state.parser_acc
+        state = clear_parser_acc(state)
+
+        acc
+        |> Enum.reverse()
+        |> IO.iodata_to_binary()
         |> add_stap_a_header(state)
         |> action_from_data(state)
     end
@@ -156,22 +181,8 @@ defmodule Membrane.Element.RTP.H264.Payloader do
   defp unify_result(result), do: result
 
   defp add_to_accumulator(data, state) do
-    acc = state.parser_acc <> data
-
-    if byte_size(acc) >= @prefered_single_size do
-      state = clear_parser_acc(state)
-
-      acc
-      |> add_stap_a_header(state)
-      |> action_from_data(state)
-    else
-      state =
-        state
-        |> Map.put(:parser_acc, acc)
-        |> Map.put(:units_in_acc, state.units_in_acc + 1)
-
-      {:ok, state}
-    end
+    state = %State{state | parser_acc: [data | state.parser_acc]}
+    {:ok, state}
   end
 
   defp action_from_data(data, state) when is_list(data),
@@ -218,29 +229,30 @@ defmodule Membrane.Element.RTP.H264.Payloader do
 
   defp delete_prefix(@frame_prefix_shorter <> rest), do: rest
 
-  defp divide_fua_payload(<<head::binary-@prefered_single_size, rest::binary>>, state) do
-    with <<r::1, nri::2, type::5, rest_of_head::binary>> <- head do
+  defp divide_fua_payload(payload, state) do
+    preferred_size_size = state.preferred_size_size
+
+    with <<head::binary-size(preferred_size_size), rest::binary>> <- payload,
+         <<r::1, nri::2, type::5, rest_of_head::binary>> <- head do
       payload = add_fu_a_indicator_and_header(rest_of_head, 1, 0, r, nri, type)
       [payload | do_divide_fua_payload(rest, r, nri, type, state)]
     end
   end
 
-  defp do_divide_fua_payload(
-         <<head::binary-@prefered_single_size, rest::binary>>,
-         r,
-         nri,
-         type,
-         state
-       ) do
-    payload = add_fu_a_indicator_and_header(head, 0, 0, r, nri, type)
-    [payload] ++ do_divide_fua_payload(rest, r, nri, type, state)
+  defp do_divide_fua_payload(payload, r, nri, type, state) do
+    preferred_size_size = state.preferred_size_size
+
+    with <<head::binary-size(preferred_size_size), rest::binary>> <- payload do
+      payload = add_fu_a_indicator_and_header(head, 0, 0, r, nri, type)
+      [payload] ++ do_divide_fua_payload(rest, r, nri, type, state)
+    else
+      rest -> [add_fu_a_indicator_and_header(rest, 0, 1, r, nri, type)]
+    end
   end
 
-  defp do_divide_fua_payload(rest, r, nri, type, _state),
-    do: [add_fu_a_indicator_and_header(rest, 0, 1, r, nri, type)]
-
-  defp add_fu_a_indicator_and_header(payload, s, e, r, nri, type),
+  defp(add_fu_a_indicator_and_header(payload, s, e, r, nri, type),
     do: <<r::1, nri::2, NAL.Header.encode_type(:fu_a)::5, s::1, e::1, 0::1, type::5>> <> payload
+  )
 
   defp add_stap_a_size(<<_nalu_hdr::binary-1, rest::binary>> = data),
     do: <<byte_size(rest)::size(16)>> <> data
@@ -254,14 +266,15 @@ defmodule Membrane.Element.RTP.H264.Payloader do
 
   defp clear_parser_acc(state) do
     state
-    |> Map.put(:parser_acc, <<>>)
-    |> Map.put(:units_in_acc, 0)
+    |> Map.put(:parser_acc, [])
+    |> Map.put(:acc_byte_size, 0)
     |> Map.put(:stap_a_reserved, 0)
     |> Map.put(:stap_a_nri, 0)
   end
 
-  defp update_stap_a_properties(<<r::1, nri::2, _type::5, _rest::binary()>>, state) do
+  defp update_stap_a_properties(<<r::1, nri::2, _type::5, _rest::binary()>> = payload, state) do
     state
+    |> Map.put(:acc_byte_size, state.acc_byte_size + byte_size(payload))
     |> Map.put(:stap_a_reserved, state.stap_a_reserved && r)
     |> Map.put(:stap_a_nri, min(state.stap_a_nri, nri))
   end
