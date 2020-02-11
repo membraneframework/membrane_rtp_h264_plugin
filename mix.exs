@@ -8,7 +8,7 @@ defmodule Membrane.Element.RTP.H264.MixProject do
     [
       app: :membrane_element_rtp_h264,
       version: @version,
-      elixir: "~> 1.7",
+      elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       description: "Membrane Multimedia Framework (RTP H264 Element)",
@@ -63,7 +63,7 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       {:bunch, "~> 1.2"},
       {:membrane_caps_rtp, "~> 0.1"},
       {:membrane_caps_video_h264, "~> 0.1"},
-      {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.0.0", only: [:dev], runtime: false}
     ]
   end
 end

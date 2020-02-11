@@ -49,7 +49,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderTest do
       assert {{:ok, actions}, state} =
                Depayloader.handle_process(:input, buffer, nil, @empty_state)
 
-      assert [buffer: {:output, buffers}] = actions
+      assert [buffer: {:output, buffers}, redemand: :output] = actions
 
       buffers
       |> Enum.zip(data)
