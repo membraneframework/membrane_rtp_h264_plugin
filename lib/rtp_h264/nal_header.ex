@@ -75,6 +75,17 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   def parse_unit_header(_), do: {:error, :malformed_data}
 
   @doc """
+  Adds NAL header to payload
+  """
+  @spec add_header(binary(), 0 | 1, nri(), type()) :: binary()
+  def add_header(payload, reserved, nri, type),
+    do: <<reserved::1, nri::2, type::5>> <> payload
+
+  @spec add_header(binary(), __MODULE__.t()) :: binary()
+  def add_header(payload, header),
+    do: <<0::1, header.nal_ref_idc::2, header.type::5>> <> payload
+
+  @doc """
   Parses type stored in NAL Header
   """
   @spec decode_type(t) :: types()

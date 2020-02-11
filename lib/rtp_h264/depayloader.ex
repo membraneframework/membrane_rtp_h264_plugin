@@ -38,7 +38,8 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   def handle_process(:input, %Buffer{payload: payload} = buffer, _ctx, state) do
     with {:ok, {header, _} = nal} <- NAL.Header.parse_unit_header(payload),
          unit_type = NAL.Header.decode_type(header),
-         {{:ok, actions}, new_state} <- handle_unit_type(unit_type, nal, buffer, state) do
+         {{:ok, actions}, new_state} <-
+           handle_unit_type(unit_type, nal, buffer, state) do
       {{:ok, actions ++ [redemand: :output]}, new_state}
     else
       {:error, reason} ->
@@ -69,8 +70,7 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
     case FU.parse(data, seq_num, map_state_to_fu(state)) do
       {:ok, {data, type}} ->
-        header = <<0::1, header.nal_ref_idc::2, type::5>>
-        data = header <> data
+        data = NAL.Header.add_header(data, 0, header.nal_ref_idc, type)
         buffer_output(data, buffer, %State{state | parser_acc: nil})
 
       {:incomplete, fu} ->

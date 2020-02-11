@@ -34,6 +34,45 @@ defmodule Membrane.Element.RTP.H264.FU do
     end
   end
 
+  @doc """
+  Fragmentate H264 unit into list of FU-A payloads
+  """
+  @spec fragmentate(binary(), pos_integer()) :: list(binary()) | {:error, :unit_too_small}
+  def fragmentate(data, preferred_size) do
+    with <<header::8, head::binary-size(preferred_size), rest::binary>> <- data,
+         <<r::1, nri::2, type::5>> <- <<header>> do
+      payload =
+        head
+        |> Header.add_header(1, 0, type)
+        |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+
+      [payload | do_fragmentate(rest, r, nri, type, preferred_size)]
+    else
+      _data -> {:error, :unit_too_small}
+    end
+  end
+
+  defp do_fragmentate(data, r, nri, type, preferred_size) do
+    with <<head::binary-size(preferred_size), rest::binary>> <- data do
+      payload =
+        head
+        |> Header.add_header(0, 0, type)
+        |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+
+      [payload] ++ do_fragmentate(rest, r, nri, type, preferred_size)
+    else
+      <<>> ->
+        []
+
+      rest ->
+        [
+          rest
+          |> Header.add_header(0, 1, type)
+          |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+        ]
+    end
+  end
+
   defp do_parse(header, data, seq_num, acc)
 
   defp do_parse(%Header{start_bit: true}, data, seq_num, acc),
