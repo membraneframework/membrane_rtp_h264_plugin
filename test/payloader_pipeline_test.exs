@@ -66,7 +66,7 @@ defmodule Membrane.Element.RTP.H264.PayloaderPipelineTest do
       assert ^glued = List.duplicate(single_unit, number_of_packets)
     end
 
-    test "does not crash when parsing medium units" do
+    test "does not crash when parsing payloading units" do
       number_of_packets = 16
       single_size = @preferred_size * 8
 

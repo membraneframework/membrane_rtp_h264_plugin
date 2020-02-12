@@ -18,23 +18,32 @@ defmodule Membrane.Element.RTP.H264.Payloader do
   @max_sequence_number 65_535
   @max_timestamp 4_294_967_296
 
-  @typedoc """
-  Options that can be passed when creating Payloader.
-  Available options are:
-  * `min_single_size` - minimal byte size for Single NALU. Units smaller than it will be 
-    aggregated in STAP-A payloads. By default it's #{@min_single_size}.
-  * `max_single_size` - maximal byte size for Single NALU. Units bigger than it will be 
-    fragmented into FU-A payloads. By default it's #{@max_single_size}.
-  * `preferred_size` - byte size which will be a target for Payloader. During fragmentation
-  into FU-A payloads, every (but last) payload will be of preferred size. During aggregation into
-  STAP-A payloads Payloader will send payload if it exceeds preferred size. By default it's 
-  #{@preferred_size}.
-  """
-  @type options_t :: %{
-          min_single_size: non_neg_integer() | nil,
-          max_single_size: pos_integer() | nil,
-          preferred_size: pos_integer() | nil
-        }
+  def_options min_single_size: [
+                spec: non_neg_integer(),
+                default: @min_single_size,
+                description: """
+                Minimal byte size for Single NALU. Units smaller than it will be aggregated 
+                in STAP-A payloads.
+                """
+              ],
+              max_single_size: [
+                spec: pos_integer(),
+                default: @max_single_size,
+                description: """
+                Maximal byte size for Single NALU. Units bigger than it will be fragmented 
+                into FU-A payloads.
+                """
+              ],
+              preferred_size: [
+                spec: pos_integer(),
+                default: @preferred_size,
+                description: """
+                Byte size which will be a target for Payloader. During fragmentation
+                into FU-A payloads, every (but last) payload will be of preferred size. During 
+                aggregation into STAP-A payloads Payloader will send payload if it exceeds 
+                preferred size. 
+                """
+              ]
 
   def_output_pad :output,
     caps: {RTP, payload_type: :dynamic}
@@ -58,16 +67,13 @@ defmodule Membrane.Element.RTP.H264.Payloader do
     ]
   end
 
-  @spec handle_init(options :: options_t() | nil) :: {:ok, struct()}
   def handle_init(options) do
-    options = options || %{}
-
     {:ok,
      %State{
        sequence_number: Enum.random(0..@max_sequence_number),
-       min_single_size: Map.get(options, :min_single_size, @min_single_size),
-       max_single_size: Map.get(options, :max_single_size, @max_single_size),
-       preferred_size: Map.get(options, :preferred_size, @preferred_size)
+       min_single_size: options.min_single_size,
+       max_single_size: options.max_single_size,
+       preferred_size: options.preferred_size
      }}
   end
 
@@ -84,17 +90,12 @@ defmodule Membrane.Element.RTP.H264.Payloader do
         state
       ) do
     type = get_unit_type(payload, state)
+    rtp_metadata = Map.get(metadata, :rtp, %{timestamp: @max_timestamp})
 
-    with rtp_metadata = Map.get(metadata, :rtp, %{}),
-         {{:ok, stap_a_buffer}, state} <- handle_accumulator(type, buffer, state),
+    with {{:ok, buffers}, state} <- handle_accumulator(type, buffer, state),
          state = %State{state | metadata: rtp_metadata},
          {{:ok, actions}, state} <- handle_unit_type(type, payload, state) |> unify_result do
-      {{:ok, stap_a_buffer ++ actions}, state}
-    else
-      {:ok, state} ->
-        rtp_metadata = Map.get(metadata, :rtp, %{timestamp: @max_timestamp})
-        state = %State{state | metadata: rtp_metadata}
-        handle_unit_type(type, payload, state)
+      {{:ok, buffers ++ actions}, state}
     end
   end
 
@@ -103,7 +104,9 @@ defmodule Membrane.Element.RTP.H264.Payloader do
     {{:ok, demand: {:input, size}}, state}
   end
 
-  def handle_demand(:output, _, :bytes, _ctx, state), do: {{:error, :not_supported_unit}, state}
+  @impl true
+  def handle_demand(:output, _size, :bytes, _ctx, state),
+    do: {{:error, :not_supported_unit}, state}
 
   @impl true
   def handle_event(:input, event, _context, state), do: {{:ok, forward: event}, state}
@@ -123,7 +126,7 @@ defmodule Membrane.Element.RTP.H264.Payloader do
 
   defp handle_accumulator(:stap_a, buffer, %State{metadata: %{timestamp: timestamp}} = state) do
     if buffer.metadata.rtp.timestamp == timestamp do
-      {:ok, state}
+      {{:ok, []}, state}
     else
       flush_accumulator(state)
     end
@@ -136,7 +139,7 @@ defmodule Membrane.Element.RTP.H264.Payloader do
 
     cond do
       acc == [] ->
-        {:ok, state}
+        {{:ok, []}, state}
 
       length(acc) == 1 ->
         state = clear_parser_acc(state)

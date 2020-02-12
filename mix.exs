@@ -37,7 +37,10 @@ defmodule Membrane.Element.RTP.H264.MixProject do
     [
       main: "readme",
       extras: ["README.md"],
-      source_ref: "v#{@version}"
+      source_ref: "v#{@version}",
+      nest_modules_by_prefix: [
+        Membrane.Element.RTP.H264
+      ]
     ]
   end
 
@@ -48,10 +51,7 @@ defmodule Membrane.Element.RTP.H264.MixProject do
       links: %{
         "GitHub" => @github_url,
         "Membrane Framework Homepage" => "https://membraneframework.org"
-      },
-      nest_modules_by_prefix: [
-        Membrane.Element.RTP.H264
-      ]
+      }
     ]
   end
 
