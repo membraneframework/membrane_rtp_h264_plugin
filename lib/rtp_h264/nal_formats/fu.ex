@@ -53,14 +53,15 @@ defmodule Membrane.Element.RTP.H264.FU do
   end
 
   defp do_fragmentate(data, r, nri, type, preferred_size) do
-    with <<head::binary-size(preferred_size), rest::binary>> <- data do
-      payload =
-        head
-        |> Header.add_header(0, 0, type)
-        |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+    case data do
+      <<head::binary-size(preferred_size), rest::binary>> ->
+        payload =
+          head
+          |> Header.add_header(0, 0, type)
+          |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
 
-      [payload] ++ do_fragmentate(rest, r, nri, type, preferred_size)
-    else
+        [payload] ++ do_fragmentate(rest, r, nri, type, preferred_size)
+
       <<>> ->
         []
 

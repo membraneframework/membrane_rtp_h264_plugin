@@ -81,10 +81,6 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   def add_header(payload, reserved, nri, type),
     do: <<reserved::1, nri::2, type::5>> <> payload
 
-  @spec add_header(binary(), __MODULE__.t()) :: binary()
-  def add_header(payload, header),
-    do: <<0::1, header.nal_ref_idc::2, header.type::5>> <> payload
-
   @doc """
   Parses type stored in NAL Header
   """
@@ -104,14 +100,12 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   Encodes given NAL type
   """
   @spec encode_type(types()) :: type()
-  def encode_type(type), do: do_encode_type(type)
-
-  defp do_encode_type(:single_nalu), do: 1
-  defp do_encode_type(:stap_a), do: 24
-  defp do_encode_type(:stap_b), do: 25
-  defp do_encode_type(:mtap_16), do: 26
-  defp do_encode_type(:mtap_24), do: 27
-  defp do_encode_type(:fu_a), do: 28
-  defp do_encode_type(:fu_b), do: 29
-  defp do_encode_type(:reserved), do: 30
+  def encode_type(:single_nalu), do: 1
+  def encode_type(:stap_a), do: 24
+  def encode_type(:stap_b), do: 25
+  def encode_type(:mtap_16), do: 26
+  def encode_type(:mtap_24), do: 27
+  def encode_type(:fu_a), do: 28
+  def encode_type(:fu_b), do: 29
+  def encode_type(:reserved), do: 30
 end
