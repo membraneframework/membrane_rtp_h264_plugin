@@ -1,6 +1,10 @@
 defmodule Membrane.Element.RTP.H264.Payloader do
   @moduledoc """
   Payloads H264 NAL Units into H264 RTP payloads.
+
+  Based on [RFC 6184](https://tools.ietf.org/html/rfc6184)
+
+  Supported types: Single NALU, FU-A, STAP-A.
   """
 
   use Membrane.Filter
@@ -135,17 +139,15 @@ defmodule Membrane.Element.RTP.H264.Payloader do
   defp handle_accumulator(_type, _buffer, state), do: flush_accumulator(state)
 
   defp flush_accumulator(state) do
-    acc = state.parser_acc
-
-    cond do
-      acc == [] ->
+    case state.parser_acc do
+      [] ->
         {{:ok, []}, state}
 
-      length(acc) == 1 ->
+      [head] ->
         state = clear_parser_acc(state)
-        acc |> hd |> StapA.delete_size() |> action_from_data(state)
+        head |> StapA.delete_size() |> action_from_data(state)
 
-      true ->
+      acc ->
         r = state.stap_a_reserved
         nri = state.stap_a_nri
         state = clear_parser_acc(state)

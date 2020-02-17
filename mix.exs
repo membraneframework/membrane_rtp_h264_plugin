@@ -57,7 +57,7 @@ defmodule Membrane.Element.RTP.H264.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 0.5.0"},
+      {:membrane_core, git: "https://github.com/membraneframework/membrane-core"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
       {:bunch, "~> 1.2"},

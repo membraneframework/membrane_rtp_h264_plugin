@@ -4,6 +4,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
   import Membrane.Testing.Assertions
 
   alias Membrane.Buffer
+  alias Membrane.Testing.Source
   alias Membrane.Support.{DepayloaderTestingPipeline, Helper}
   alias Membrane.Support.Formatters.{FUFactory, STAPFactory}
 
@@ -14,7 +15,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
         |> Enum.chunk_every(2)
         |> Enum.map(&STAPFactory.into_stap_unit/1)
         |> Enum.map(&%Membrane.Buffer{payload: &1})
-        |> Helper.generator_from_data()
+        |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)
@@ -38,7 +39,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
         |> Enum.map(fn binary -> <<0::1, 2::2, 28::5>> <> binary end)
         |> Enum.with_index()
         |> Enum.map(fn {data, seq_num} -> Helper.into_rtp_buffer(data, seq_num) end)
-        |> Helper.generator_from_data()
+        |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)

@@ -2,7 +2,7 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   @moduledoc """
   Defines a structure representing Network Abstraction Layer Unit Header
 
-  Defined in [RFC6184](https://tools.ietf.org/html/rfc6184#section-5.3)
+  Defined in [RFC 6184](https://tools.ietf.org/html/rfc6184#section-5.3)
 
   ```
     +---------------+
@@ -48,9 +48,9 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   RBSP types are described in detail [here](https://yumichan.net/video-processing/video-compression/introduction-to-h264-nal-unit)
   """
   @type type :: 1..31
-  @type supported_types :: :stap_a | :fu_a
+  @type supported_types :: :stap_a | :fu_a | :single_nalu
   @type unsupported_types :: :stap_b | :mtap_16 | :mtap_24 | :fu_b
-  @type types :: :single_nalu | supported_types | unsupported_types | :reserved
+  @type types :: supported_types | unsupported_types | :reserved
 
   defstruct [:nal_ref_idc, :type]
 

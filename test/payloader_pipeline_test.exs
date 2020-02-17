@@ -4,6 +4,7 @@ defmodule Membrane.Element.RTP.H264.PayloaderPipelineTest do
   import Membrane.Testing.Assertions
 
   alias Membrane.Buffer
+  alias Membrane.Testing.Source
   alias Membrane.Element.RTP.H264.NAL
   alias Membrane.Element.RTP.H264.StapA
   alias Membrane.Support.{Helper, PayloaderTestingPipeline}
@@ -21,7 +22,7 @@ defmodule Membrane.Element.RTP.H264.PayloaderPipelineTest do
         (<<1::32>> <> <<1::8>> <> <<0::size(big_unit_size)>>)
         |> Helper.into_rtp_buffer(0)
         |> List.wrap()
-        |> Helper.generator_from_data()
+        |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)
@@ -53,7 +54,7 @@ defmodule Membrane.Element.RTP.H264.PayloaderPipelineTest do
         |> List.duplicate(number_of_packets)
         |> Enum.with_index()
         |> Enum.map(fn {data, seq_num} -> Helper.into_rtp_buffer(data, seq_num) end)
-        |> Helper.generator_from_data()
+        |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)
@@ -75,7 +76,7 @@ defmodule Membrane.Element.RTP.H264.PayloaderPipelineTest do
         |> Enum.map(fn i -> <<1::32>> <> <<1::8>> <> <<i::size(single_size)>> end)
         |> Enum.with_index()
         |> Enum.map(fn {data, seq_num} -> Helper.into_rtp_buffer(data, seq_num) end)
-        |> Helper.generator_from_data()
+        |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)

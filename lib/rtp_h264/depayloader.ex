@@ -1,6 +1,10 @@
 defmodule Membrane.Element.RTP.H264.Depayloader do
   @moduledoc """
   Depayloads H264 RTP payloads into H264 NAL Units.
+
+  Based on [RFC 6184](https://tools.ietf.org/html/rfc6184).
+
+  Supported types: Single NALU, FU-A, STAP-A.
   """
   use Membrane.Filter
   use Membrane.Log

@@ -39,16 +39,19 @@ defmodule Membrane.Element.RTP.H264.FU do
   """
   @spec fragmentate(binary(), pos_integer()) :: list(binary()) | {:error, :unit_too_small}
   def fragmentate(data, preferred_size) do
-    with <<header::8, head::binary-size(preferred_size), rest::binary>> <- data,
-         <<r::1, nri::2, type::5>> <- <<header>> do
-      payload =
-        head
-        |> Header.add_header(1, 0, type)
-        |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+    case data do
+      <<header::1-binary, head::binary-size(preferred_size), rest::binary>> ->
+        <<r::1, nri::2, type::5>> = header
 
-      [payload | do_fragmentate(rest, r, nri, type, preferred_size)]
-    else
-      _data -> {:error, :unit_too_small}
+        payload =
+          head
+          |> Header.add_header(1, 0, type)
+          |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+
+        [payload | do_fragmentate(rest, r, nri, type, preferred_size)]
+
+      _data ->
+        {:error, :unit_too_small}
     end
   end
 
