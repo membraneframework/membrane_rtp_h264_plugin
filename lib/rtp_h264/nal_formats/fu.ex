@@ -13,7 +13,7 @@ defmodule Membrane.Element.RTP.H264.FU do
           last_seq_num: nil | Depayloader.sequence_number()
         }
 
-  defguardp is_next(last_seq_num, next_seq_num) when last_seq_num + 1 == next_seq_num
+  defguardp is_next(last_seq_num, next_seq_num) when rem(last_seq_num + 1, 65_535) == next_seq_num
 
   @doc """
   Parses H264 Fragmentation Unit
@@ -31,6 +31,49 @@ defmodule Membrane.Element.RTP.H264.FU do
   def parse(data, seq_num, acc) do
     with {:ok, {header, value}} <- Header.parse(data) do
       do_parse(header, value, seq_num, acc)
+    end
+  end
+
+  @doc """
+  Fragmentate H264 unit into list of FU-A payloads
+  """
+  @spec fragmentate(binary(), pos_integer()) :: list(binary()) | {:error, :unit_too_small}
+  def fragmentate(data, preferred_size) do
+    case data do
+      <<header::1-binary, head::binary-size(preferred_size), rest::binary>> ->
+        <<r::1, nri::2, type::5>> = header
+
+        payload =
+          head
+          |> Header.add_header(1, 0, type)
+          |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+
+        [payload | do_fragmentate(rest, r, nri, type, preferred_size)]
+
+      _data ->
+        {:error, :unit_too_small}
+    end
+  end
+
+  defp do_fragmentate(data, r, nri, type, preferred_size) do
+    case data do
+      <<head::binary-size(preferred_size), rest::binary>> ->
+        payload =
+          head
+          |> Header.add_header(0, 0, type)
+          |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+
+        [payload] ++ do_fragmentate(rest, r, nri, type, preferred_size)
+
+      <<>> ->
+        []
+
+      rest ->
+        [
+          rest
+          |> Header.add_header(0, 1, type)
+          |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
+        ]
     end
   end
 

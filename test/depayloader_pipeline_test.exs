@@ -4,8 +4,8 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
   import Membrane.Testing.Assertions
 
   alias Membrane.Buffer
-  alias Membrane.Event.EndOfStream
-  alias Membrane.Support.DepayloaderTestingPipeline
+  alias Membrane.Testing.Source
+  alias Membrane.Support.{DepayloaderTestingPipeline, Helper}
   alias Membrane.Support.Formatters.{FUFactory, STAPFactory}
 
   describe "Depayloader in a pipeline" do
@@ -15,7 +15,7 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
         |> Enum.chunk_every(2)
         |> Enum.map(&STAPFactory.into_stap_unit/1)
         |> Enum.map(&%Membrane.Buffer{payload: &1})
-        |> generator_from_data()
+        |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)
@@ -38,8 +38,8 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
         |> Enum.flat_map(fn _ -> FUFactory.get_all_fixtures() end)
         |> Enum.map(fn binary -> <<0::1, 2::2, 28::5>> <> binary end)
         |> Enum.with_index()
-        |> Enum.map(fn {data, seq_num} -> into_rtp_buffer(data, seq_num) end)
-        |> generator_from_data()
+        |> Enum.map(fn {data, seq_num} -> Helper.into_rtp_buffer(data, seq_num) end)
+        |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)
@@ -50,19 +50,4 @@ defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
       end)
     end
   end
-
-  def generator_from_data(data) do
-    fun = fn state, size ->
-      {buffers, leftover} = Enum.split(state, size)
-      buffer_action = [{:buffer, {:output, buffers}}]
-      event_action = if leftover == [], do: [{:event, {:output, %EndOfStream{}}}], else: []
-      to_send = buffer_action ++ event_action
-      {to_send, leftover}
-    end
-
-    {data, fun}
-  end
-
-  def into_rtp_buffer(data, seq_num),
-    do: %Buffer{payload: data, metadata: %{rtp: %{sequence_number: seq_num}}}
 end

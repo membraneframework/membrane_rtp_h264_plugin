@@ -55,4 +55,11 @@ defmodule Membrane.Element.RTP.H264.FU.Header do
   end
 
   def parse(_), do: {:error, :packet_malformed}
+
+  @doc """
+  Adds FU header
+  """
+  @spec add_header(binary(), 0 | 1, 0 | 1, NAL.Header.type()) :: binary()
+  def add_header(payload, start_bit, end_bit, type),
+    do: <<start_bit::1, end_bit::1, 0::1, type::5>> <> payload
 end

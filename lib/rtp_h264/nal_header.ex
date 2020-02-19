@@ -2,7 +2,7 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   @moduledoc """
   Defines a structure representing Network Abstraction Layer Unit Header
 
-  Defined in [RFC6184](https://tools.ietf.org/html/rfc6184#section-5.3)
+  Defined in [RFC 6184](https://tools.ietf.org/html/rfc6184#section-5.3)
 
   ```
     +---------------+
@@ -48,9 +48,9 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   RBSP types are described in detail [here](https://yumichan.net/video-processing/video-compression/introduction-to-h264-nal-unit)
   """
   @type type :: 1..31
-  @type supported_types :: :stap_a | :fu_a
+  @type supported_types :: :stap_a | :fu_a | :single_nalu
   @type unsupported_types :: :stap_b | :mtap_16 | :mtap_24 | :fu_b
-  @type types :: :single_nalu | supported_types | unsupported_types | :reserved
+  @type types :: supported_types | unsupported_types | :reserved
 
   defstruct [:nal_ref_idc, :type]
 
@@ -75,6 +75,13 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   def parse_unit_header(_), do: {:error, :malformed_data}
 
   @doc """
+  Adds NAL header to payload
+  """
+  @spec add_header(binary(), 0 | 1, nri(), type()) :: binary()
+  def add_header(payload, reserved, nri, type),
+    do: <<reserved::1, nri::2, type::5>> <> payload
+
+  @doc """
   Parses type stored in NAL Header
   """
   @spec decode_type(t) :: types()
@@ -88,4 +95,17 @@ defmodule Membrane.Element.RTP.H264.NAL.Header do
   defp do_decode_type(28), do: :fu_a
   defp do_decode_type(29), do: :fu_b
   defp do_decode_type(number) when number in 30..31 or number in [22, 23], do: :reserved
+
+  @doc """
+  Encodes given NAL type
+  """
+  @spec encode_type(types()) :: type()
+  def encode_type(:single_nalu), do: 1
+  def encode_type(:stap_a), do: 24
+  def encode_type(:stap_b), do: 25
+  def encode_type(:mtap_16), do: 26
+  def encode_type(:mtap_24), do: 27
+  def encode_type(:fu_a), do: 28
+  def encode_type(:fu_b), do: 29
+  def encode_type(:reserved), do: 30
 end

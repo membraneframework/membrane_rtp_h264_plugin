@@ -1,6 +1,10 @@
 defmodule Membrane.Element.RTP.H264.Depayloader do
   @moduledoc """
   Depayloads H264 RTP payloads into H264 NAL Units.
+
+  Based on [RFC 6184](https://tools.ietf.org/html/rfc6184).
+
+  Supported types: Single NALU, FU-A, STAP-A.
   """
   use Membrane.Filter
   use Membrane.Log
@@ -38,8 +42,9 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   def handle_process(:input, %Buffer{payload: payload} = buffer, _ctx, state) do
     with {:ok, {header, _} = nal} <- NAL.Header.parse_unit_header(payload),
          unit_type = NAL.Header.decode_type(header),
-         {{:ok, _actions}, _state} = action <- handle_unit_type(unit_type, nal, buffer, state) do
-      action
+         {{:ok, actions}, new_state} <-
+           handle_unit_type(unit_type, nal, buffer, state) do
+      {{:ok, actions ++ [redemand: :output]}, new_state}
     else
       {:error, reason} ->
         log_malformed_buffer(buffer, reason)
@@ -48,8 +53,9 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_demand(:output, size, :buffers, _ctx, state),
-    do: {{:ok, demand: {:input, size}}, state}
+  def handle_demand(:output, size, :buffers, _ctx, state) do
+    {{:ok, demand: {:input, size}}, state}
+  end
 
   def handle_demand(:output, _, :bytes, _ctx, state), do: {{:error, :not_supported_unit}, state}
 
@@ -68,12 +74,11 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
 
     case FU.parse(data, seq_num, map_state_to_fu(state)) do
       {:ok, {data, type}} ->
-        header = <<0::1, header.nal_ref_idc::2, type::5>>
-        data = header <> data
+        data = NAL.Header.add_header(data, 0, header.nal_ref_idc, type)
         buffer_output(data, buffer, %State{state | parser_acc: nil})
 
       {:incomplete, fu} ->
-        {{:ok, redemand: :output}, %State{state | parser_acc: fu}}
+        {{:ok, []}, %State{state | parser_acc: fu}}
 
       {:error, _} = error ->
         error

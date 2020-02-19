@@ -36,6 +36,19 @@ defmodule Membrane.Element.RTP.H264.StapA do
     end
   end
 
+  @doc """
+  Adds NALU size to unit
+  """
+  @spec add_size(binary()) :: binary()
+  def add_size(<<_nalu_hdr::binary-1, rest::binary>> = data),
+    do: <<byte_size(rest)::size(16)>> <> data
+
+  @doc """
+  Removes NALU size from unit
+  """
+  @spec delete_size(binary()) :: binary()
+  def delete_size(<<_size::size(16), rest::binary>>), do: rest
+
   defp parse_batch(data, acc \\ [])
   defp parse_batch(<<>>, acc), do: {:ok, acc}
 
