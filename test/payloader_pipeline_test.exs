@@ -1,12 +1,12 @@
-defmodule Membrane.Element.RTP.H264.PayloaderPipelineTest do
+defmodule Membrane.RTP.H264.PayloaderPipelineTest do
   use ExUnit.Case
 
   import Membrane.Testing.Assertions
 
   alias Membrane.Buffer
   alias Membrane.Testing.Source
-  alias Membrane.Element.RTP.H264.NAL
-  alias Membrane.Element.RTP.H264.StapA
+  alias Membrane.RTP.H264.NAL
+  alias Membrane.RTP.H264.StapA
   alias Membrane.Support.{Helper, PayloaderTestingPipeline}
 
   @big_size 16_384

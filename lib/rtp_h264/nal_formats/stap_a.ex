@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RTP.H264.StapA do
+defmodule Membrane.RTP.H264.StapA do
   @moduledoc """
   Module responsible for parsing Single Time Agregation Packets type A.
 

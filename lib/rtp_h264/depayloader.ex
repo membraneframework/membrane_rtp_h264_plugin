@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RTP.H264.Depayloader do
+defmodule Membrane.RTP.H264.Depayloader do
   @moduledoc """
   Depayloads H264 RTP payloads into H264 NAL Units.
 
@@ -10,9 +10,10 @@ defmodule Membrane.Element.RTP.H264.Depayloader do
   use Membrane.Log
 
   alias Membrane.Buffer
-  alias Membrane.Caps.{RTP, Video.H264}
+  alias Membrane.RTP
+  alias Membrane.Caps.Video.H264
   alias Membrane.Event.Discontinuity
-  alias Membrane.Element.RTP.H264.{FU, NAL, StapA}
+  alias Membrane.RTP.H264.{FU, NAL, StapA}
 
   @frame_prefix <<1::32>>
   @type sequence_number :: 0..65_535

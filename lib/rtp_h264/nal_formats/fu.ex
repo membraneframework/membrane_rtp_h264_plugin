@@ -1,10 +1,10 @@
-defmodule Membrane.Element.RTP.H264.FU do
+defmodule Membrane.RTP.H264.FU do
   @moduledoc """
   Module responsible for parsing H264 Fragmentation Unit.
   """
   use Bunch
-  alias Membrane.Element.RTP.H264.FU.Header
-  alias Membrane.Element.RTP.H264.{Depayloader, NAL}
+  alias Membrane.RTP.H264.FU.Header
+  alias Membrane.RTP.H264.{Depayloader, NAL}
 
   defstruct [:last_seq_num, data: []]
 

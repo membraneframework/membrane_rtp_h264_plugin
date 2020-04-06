@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RTP.H264.Payloader do
+defmodule Membrane.RTP.H264.Payloader do
   @moduledoc """
   Payloads H264 NAL Units into H264 RTP payloads.
 
@@ -11,8 +11,9 @@ defmodule Membrane.Element.RTP.H264.Payloader do
   use Membrane.Log
 
   alias Membrane.Buffer
-  alias Membrane.Caps.{RTP, Video.H264}
-  alias Membrane.Element.RTP.H264.{FU, NAL, StapA}
+  alias Membrane.RTP
+  alias Membrane.Caps.Video.H264
+  alias Membrane.RTP.H264.{FU, NAL, StapA}
 
   @frame_prefix_shorter <<1::24>>
   @frame_prefix_longer <<1::32>>
