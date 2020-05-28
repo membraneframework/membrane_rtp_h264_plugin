@@ -22,7 +22,7 @@ defmodule Membrane.RTP.H264.Depayloader do
     caps: {H264, stream_format: :byte_stream}
 
   def_input_pad :input,
-    caps: {RTP, payload_type: :dynamic},
+    caps: {RTP, payload_type: range(96, 127)},
     demand_unit: :buffers
 
   defmodule State do
