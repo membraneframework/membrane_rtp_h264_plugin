@@ -1,8 +1,8 @@
-defmodule Membrane.Element.RTP.H264.FUTest do
+defmodule Membrane.RTP.H264.FUTest do
   use ExUnit.Case
   use Bunch
 
-  alias Membrane.Element.RTP.H264.FU
+  alias Membrane.RTP.H264.FU
   alias Membrane.Support.Formatters.FUFactory
 
   @base_seq_num 4567

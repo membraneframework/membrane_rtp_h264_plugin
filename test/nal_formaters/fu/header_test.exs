@@ -1,6 +1,6 @@
-defmodule Membrane.Element.RTP.H264.FU.HeaderTest do
+defmodule Membrane.RTP.H264.FU.HeaderTest do
   use ExUnit.Case
-  alias Membrane.Element.RTP.H264.FU.Header
+  alias Membrane.RTP.H264.FU.Header
 
   describe "Fragmentation Unit Header parser" do
     test "returns error when invalid data is being parsed" do

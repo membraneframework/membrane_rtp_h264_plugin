@@ -1,9 +1,9 @@
-defmodule Membrane.Element.RTP.H264.DepayloaderTest do
+defmodule Membrane.RTP.H264.DepayloaderTest do
   use ExUnit.Case
   use Bunch
 
   alias Membrane.Buffer
-  alias Membrane.Element.RTP.H264.{Depayloader, FU}
+  alias Membrane.RTP.H264.{Depayloader, FU}
   alias Membrane.Support.Formatters.{FUFactory, RBSPNaluFactory, STAPFactory}
 
   @empty_state %Depayloader.State{}

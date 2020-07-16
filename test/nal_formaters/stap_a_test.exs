@@ -1,8 +1,8 @@
-defmodule Membrane.Element.RTP.H264.StapATest do
+defmodule Membrane.RTP.H264.StapATest do
   use ExUnit.Case
   use Bunch
 
-  alias Membrane.Element.RTP.H264.StapA
+  alias Membrane.RTP.H264.StapA
   alias Membrane.Support.Formatters.STAPFactory
 
   describe "Single Time Agregation Packet parser" do

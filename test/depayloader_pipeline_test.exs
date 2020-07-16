@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RTP.H264.DepayloaderPipelineTest do
+defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
   use ExUnit.Case
 
   import Membrane.Testing.Assertions

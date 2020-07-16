@@ -1,4 +1,4 @@
-defmodule Membrane.Element.RTP.H264.NAL.Header do
+defmodule Membrane.RTP.H264.NAL.Header do
   @moduledoc """
   Defines a structure representing Network Abstraction Layer Unit Header
 
