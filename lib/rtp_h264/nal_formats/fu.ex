@@ -13,7 +13,7 @@ defmodule Membrane.RTP.H264.FU do
           last_seq_num: nil | Depayloader.sequence_number()
         }
 
-  defguardp is_next(last_seq_num, next_seq_num) when rem(last_seq_num + 1, 65_535) == next_seq_num
+  defguardp is_next(last_seq_num, next_seq_num) when rem(last_seq_num + 1, 65_536) == next_seq_num
 
   @doc """
   Parses H264 Fragmentation Unit

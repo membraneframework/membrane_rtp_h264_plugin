@@ -105,12 +105,11 @@ defmodule Membrane.RTP.H264.Depayloader do
   defp map_state_to_fu(%State{parser_acc: %FU{} = fu}), do: fu
   defp map_state_to_fu(_), do: %FU{}
 
-  defp log_malformed_buffer(%Buffer{metadata: metadata}, reason) do
-    %{rtp: %{sequence_number: seq_num}} = metadata
-
+  defp log_malformed_buffer(packet, reason) do
     warn("""
-    An error occurred while parsing RTP frame with sequence_number: #{seq_num}
+    An error occurred while parsing RTP packet.
     Reason: #{reason}
+    Packet: #{inspect(packet, limit: :infinity)}
     """)
   end
 end
