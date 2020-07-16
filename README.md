@@ -40,12 +40,12 @@ Interleaved mode is not currently supported.
 
 ## Installation
 
-The package can be installed by adding `membrane_element_rtp_h264` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `membrane_rtp_h264_plugin` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:membrane_element_rtp_h264, "~> 0.3.0-alpha"}
+    {:membrane_rtp_h264_plugin, "~> 0.3.0-alpha"}
   ]
 end
 ```
