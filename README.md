@@ -1,5 +1,5 @@
 # Membrane Multimedia Framework: RTP H264
-[![CircleCI](https://circleci.com/gh/membraneframework/membrane_rtp_h264_plugin?style=svg)](https://circleci.com/gh/membraneframework/membrane_rtp_h264_plugin)
+[![CircleCI](https://circleci.com/gh/membraneframework/membrane_rtp_h264_plugin.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane_rtp_h264_plugin)
 
 This package provides elements that can be used for depayloading H.264 video.
 
