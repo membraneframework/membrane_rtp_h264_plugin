@@ -5,7 +5,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
 
   alias Membrane.Buffer
   alias Membrane.Testing.Source
-  alias Membrane.Support.{DepayloaderTestingPipeline, Helper}
+  alias Membrane.Support.DepayloaderTestingPipeline
   alias Membrane.Support.Formatters.{FUFactory, STAPFactory}
 
   describe "Depayloader in a pipeline" do
@@ -38,7 +38,9 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         |> Enum.flat_map(fn _ -> FUFactory.get_all_fixtures() end)
         |> Enum.map(fn binary -> <<0::1, 2::2, 28::5>> <> binary end)
         |> Enum.with_index()
-        |> Enum.map(fn {data, seq_num} -> Helper.into_rtp_buffer(data, seq_num) end)
+        |> Enum.map(fn {data, seq_num} ->
+          %Buffer{payload: data, metadata: %{rtp: %{sequence_number: seq_num}}}
+        end)
         |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 

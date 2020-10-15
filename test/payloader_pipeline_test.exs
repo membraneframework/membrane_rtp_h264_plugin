@@ -7,7 +7,7 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
   alias Membrane.Testing.Source
   alias Membrane.RTP.H264.NAL
   alias Membrane.RTP.H264.StapA
-  alias Membrane.Support.{Helper, PayloaderTestingPipeline}
+  alias Membrane.Support.PayloaderTestingPipeline
 
   @big_size 16_384
   @preferred_size 1024
@@ -17,11 +17,10 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
     test "does not crash when payloading big units" do
       big_unit_size = @big_size * 8
       rest_size = @preferred_size * 8
+      big_unit = <<1::32, 1, 0::size(big_unit_size)>>
 
       {:ok, pid} =
-        (<<1::32>> <> <<1::8>> <> <<0::size(big_unit_size)>>)
-        |> Helper.into_rtp_buffer(0)
-        |> List.wrap()
+        [%Buffer{payload: big_unit, metadata: %{timestamp: 0}}]
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
@@ -47,20 +46,17 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
     test "does not crash when payloading small units" do
       number_of_packets = 16
       single_size = div(@small_size, number_of_packets) * 8
-      single_unit = <<1::8>> <> <<0::size(single_size)>>
+      single_unit = <<1, 0::size(single_size)>>
 
       {:ok, pid} =
-        (<<1::32>> <> single_unit)
+        %Buffer{payload: <<1::32>> <> single_unit, metadata: %{timestamp: 0}}
         |> List.duplicate(number_of_packets)
-        |> Enum.with_index()
-        |> Enum.map(fn {data, seq_num} -> Helper.into_rtp_buffer(data, seq_num) end)
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
       Membrane.Pipeline.play(pid)
 
       assert_sink_buffer(pid, :sink, %Buffer{payload: data})
-
       type = NAL.Header.encode_type(:stap_a)
       assert <<0::1, 0::2, ^type::5, rest::binary()>> = data
       assert {:ok, glued} = StapA.parse(rest)
@@ -73,9 +69,8 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
 
       {:ok, pid} =
         1..number_of_packets
-        |> Enum.map(fn i -> <<1::32>> <> <<1::8>> <> <<i::size(single_size)>> end)
-        |> Enum.with_index()
-        |> Enum.map(fn {data, seq_num} -> Helper.into_rtp_buffer(data, seq_num) end)
+        |> Enum.map(&<<1::32, 1, &1::size(single_size)>>)
+        |> Enum.map(&%Buffer{payload: &1, metadata: %{timestamp: 0}})
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
