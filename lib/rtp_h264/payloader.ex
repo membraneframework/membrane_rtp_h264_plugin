@@ -11,7 +11,7 @@ defmodule Membrane.RTP.H264.Payloader do
   use Membrane.Log
 
   alias Membrane.Buffer
-  alias Membrane.RTP
+  alias Membrane.{RTP, RemoteStream}
   alias Membrane.Caps.Video.H264
   alias Membrane.RTP.H264.{FU, NAL, StapA}
 
@@ -29,15 +29,7 @@ defmodule Membrane.RTP.H264.Payloader do
     stap_a_reserved: 0
   }
 
-  def_options payload_type: [
-                type: :integer,
-                default: 96
-              ],
-              timestamp_resolution: [
-                type: :integer,
-                default: 90_000
-              ],
-              min_single_size: [
+  def_options min_single_size: [
                 spec: non_neg_integer(),
                 default: @min_single_size,
                 description: """
@@ -64,11 +56,14 @@ defmodule Membrane.RTP.H264.Payloader do
                 """
               ]
 
-  def_output_pad :output, caps: RTP
-
   def_input_pad :input,
-    caps: {H264, stream_format: :byte_stream},
+    caps: [
+      {H264, stream_format: :byte_stream},
+      {RemoteStream, content_format: one_of([nil, H264]), type: :packetized}
+    ],
     demand_unit: :buffers
+
+  def_output_pad :output, caps: RTP
 
   defmodule State do
     @moduledoc false
@@ -77,7 +72,6 @@ defmodule Membrane.RTP.H264.Payloader do
       :min_single_size,
       :preferred_size,
       :payload_type,
-      :timestamp_resolution,
       :stap_acc
     ]
   end
@@ -89,7 +83,7 @@ defmodule Membrane.RTP.H264.Payloader do
 
   @impl true
   def handle_prepared_to_playing(_ctx, state) do
-    {{:ok, caps: {:output, %RTP{payload_type: state.payload_type}}}, state}
+    {{:ok, caps: {:output, %RTP{}}}, state}
   end
 
   @impl true
@@ -102,8 +96,7 @@ defmodule Membrane.RTP.H264.Payloader do
     type = get_unit_type(payload, state)
     {acc_buffers, state} = handle_accumulator(type, buffer, state)
     {new_buffers, state} = handle_unit_type(type, buffer, state)
-    buffers = timestampify(acc_buffers ++ new_buffers, state)
-    {{:ok, buffer: {:output, buffers}, redemand: :output}, state}
+    {{:ok, buffer: {:output, acc_buffers ++ new_buffers}, redemand: :output}, state}
   end
 
   @impl true
@@ -114,7 +107,6 @@ defmodule Membrane.RTP.H264.Payloader do
   @impl true
   def handle_end_of_stream(:input, _ctx, state) do
     {buffers, state} = flush_accumulator(state)
-    buffers = timestampify(buffers, state)
     {{:ok, buffer: {:output, buffers}, end_of_stream: :output}, state}
   end
 
@@ -206,16 +198,5 @@ defmodule Membrane.RTP.H264.Payloader do
     }
 
     %{state | stap_acc: stap_acc}
-  end
-
-  defp timestampify(buffers, %{timestamp_resolution: resolution}) do
-    use Ratio
-    alias Membrane.Time
-
-    Enum.map(buffers, fn %Buffer{metadata: metadata} = buffer ->
-      rtp_timestamp = Time.to_seconds(resolution * metadata.timestamp)
-      metadata = Map.put(metadata, :rtp, %{timestamp: rtp_timestamp})
-      %Buffer{buffer | metadata: metadata}
-    end)
   end
 end
