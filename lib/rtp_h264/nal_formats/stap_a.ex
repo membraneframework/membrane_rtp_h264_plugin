@@ -26,9 +26,8 @@ defmodule Membrane.RTP.H264.StapA do
   """
   use Bunch
 
-  @doc """
-  Parses a STAP type A
-  """
+  alias Membrane.RTP.H264.NAL
+
   @spec parse(binary()) :: {:ok, [binary()]} | {:error, :packet_malformed}
   def parse(data) do
     do_parse(data, [])
@@ -41,15 +40,15 @@ defmodule Membrane.RTP.H264.StapA do
 
   defp do_parse(_data, _acc), do: {:error, :packet_malformed}
 
-  @doc """
-  Adds NALU size to unit
-  """
-  @spec add_size(binary()) :: binary()
-  def add_size(nalu), do: <<byte_size(nalu)::16, nalu::binary>>
+  @spec aggregation_unit_size(binary()) :: pos_integer()
+  def aggregation_unit_size(nalu), do: byte_size(nalu) + 2
 
-  @doc """
-  Removes NALU size from unit
-  """
-  @spec delete_size(binary()) :: binary()
-  def delete_size(<<_size::size(16), rest::binary>>), do: rest
+  @spec serialize([binary], 0..1, 0..3) :: binary
+  def serialize(payloads, reserved, nri) do
+    payloads
+    |> Enum.reverse()
+    |> Enum.map(&<<byte_size(&1)::16, &1::binary>>)
+    |> IO.iodata_to_binary()
+    |> NAL.Header.add_header(reserved, nri, NAL.Header.encode_type(:stap_a))
+  end
 end

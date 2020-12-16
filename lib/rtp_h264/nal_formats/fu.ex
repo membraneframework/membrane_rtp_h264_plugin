@@ -3,14 +3,14 @@ defmodule Membrane.RTP.H264.FU do
   Module responsible for parsing H264 Fragmentation Unit.
   """
   use Bunch
-  alias Membrane.RTP.H264.FU.Header
-  alias Membrane.RTP.H264.{Depayloader, NAL}
+  alias __MODULE__
+  alias Membrane.RTP.H264.NAL
 
   defstruct [:last_seq_num, data: []]
 
   @type t :: %__MODULE__{
           data: [binary()],
-          last_seq_num: nil | Depayloader.sequence_number()
+          last_seq_num: nil | non_neg_integer()
         }
 
   defguardp is_next(last_seq_num, next_seq_num) when rem(last_seq_num + 1, 65_536) == next_seq_num
@@ -23,47 +23,46 @@ defmodule Membrane.RTP.H264.FU do
   In case of last packet `{:ok, {type, data}}` tuple will be returned, where data
   is `NAL Unit` created by concatenating subsequent Fragmentation Units.
   """
-
-  @spec parse(binary(), Depayloader.sequence_number(), t) ::
+  @spec parse(binary(), non_neg_integer(), t) ::
           {:ok, {binary(), NAL.Header.type()}}
           | {:error, :packet_malformed | :invalid_first_packet}
           | {:incomplete, t()}
   def parse(data, seq_num, acc) do
-    with {:ok, {header, value}} <- Header.parse(data) do
+    with {:ok, {header, value}} <- FU.Header.parse(data) do
       do_parse(header, value, seq_num, acc)
     end
   end
 
   @doc """
-  Fragmentate H264 unit into list of FU-A payloads
+  Serialize H264 unit into list of FU-A payloads
   """
-  @spec fragmentate(binary(), pos_integer()) :: list(binary()) | {:error, :unit_too_small}
-  def fragmentate(data, preferred_size) do
+  @spec serialize(binary(), pos_integer()) :: list(binary()) | {:error, :unit_too_small}
+  def serialize(data, preferred_size) do
     case data do
       <<header::1-binary, head::binary-size(preferred_size), rest::binary>> ->
         <<r::1, nri::2, type::5>> = header
 
         payload =
           head
-          |> Header.add_header(1, 0, type)
+          |> FU.Header.add_header(1, 0, type)
           |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
 
-        [payload | do_fragmentate(rest, r, nri, type, preferred_size)]
+        [payload | do_serialize(rest, r, nri, type, preferred_size)]
 
       _data ->
         {:error, :unit_too_small}
     end
   end
 
-  defp do_fragmentate(data, r, nri, type, preferred_size) do
+  defp do_serialize(data, r, nri, type, preferred_size) do
     case data do
       <<head::binary-size(preferred_size), rest::binary>> ->
         payload =
           head
-          |> Header.add_header(0, 0, type)
+          |> FU.Header.add_header(0, 0, type)
           |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
 
-        [payload] ++ do_fragmentate(rest, r, nri, type, preferred_size)
+        [payload] ++ do_serialize(rest, r, nri, type, preferred_size)
 
       <<>> ->
         []
@@ -71,7 +70,7 @@ defmodule Membrane.RTP.H264.FU do
       rest ->
         [
           rest
-          |> Header.add_header(0, 1, type)
+          |> FU.Header.add_header(0, 1, type)
           |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
         ]
     end
@@ -79,13 +78,13 @@ defmodule Membrane.RTP.H264.FU do
 
   defp do_parse(header, data, seq_num, acc)
 
-  defp do_parse(%Header{start_bit: true}, data, seq_num, acc),
+  defp do_parse(%FU.Header{start_bit: true}, data, seq_num, acc),
     do: {:incomplete, %__MODULE__{acc | data: [data], last_seq_num: seq_num}}
 
-  defp do_parse(%Header{start_bit: false}, _, _, %__MODULE__{last_seq_num: nil}),
+  defp do_parse(%FU.Header{start_bit: false}, _, _, %__MODULE__{last_seq_num: nil}),
     do: {:error, :invalid_first_packet}
 
-  defp do_parse(%Header{end_bit: true, type: type}, data, seq_num, %__MODULE__{
+  defp do_parse(%FU.Header{end_bit: true, type: type}, data, seq_num, %__MODULE__{
          data: acc,
          last_seq_num: last
        })

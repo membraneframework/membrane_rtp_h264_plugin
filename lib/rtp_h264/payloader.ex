@@ -7,52 +7,34 @@ defmodule Membrane.RTP.H264.Payloader do
   Supported types: Single NALU, FU-A, STAP-A.
   """
 
+  use Bunch
   use Membrane.Filter
   use Membrane.Log
 
   alias Membrane.Buffer
-  alias Membrane.{RTP, RemoteStream}
+  alias Membrane.RTP
   alias Membrane.Caps.Video.H264
-  alias Membrane.RTP.H264.{FU, NAL, StapA}
+  alias Membrane.RTP.H264.{FU, StapA}
 
-  @frame_prefix_shorter <<1::24>>
-  @frame_prefix_longer <<1::32>>
-  @min_single_size 512
-  @preferred_size 1024
-  @max_single_size 1200
-
-  @empty_stap_acc %{
-    payloads: [],
-    byte_size: 0,
-    metadata: nil,
-    stap_a_nri: 0,
-    stap_a_reserved: 0
-  }
-
-  def_options min_single_size: [
+  def_options max_payload_size: [
                 spec: non_neg_integer(),
-                default: @min_single_size,
+                default: 1400,
                 description: """
-                Minimal byte size for Single NALU. Units smaller than it will be aggregated
-                in STAP-A payloads.
+                Maximal size of outputted payloads in bytes. Doesn't work in
+                the `single_nalu` mode. The resulting RTP packet will also contain
+                RTP header (12B) and potentially RTP extensions. For most
+                applications, everything should fit in standard MTU size (1500B)
+                after adding L3 and L2 protocols' overhead.
                 """
               ],
-              max_single_size: [
-                spec: pos_integer(),
-                default: @max_single_size,
+              mode: [
+                spec: :single_nalu | :non_interleaved,
+                default: :non_interleaved,
                 description: """
-                Maximal byte size for Single NALU. Units bigger than it will be fragmented
-                into FU-A payloads.
-                """
-              ],
-              preferred_size: [
-                spec: pos_integer(),
-                default: @preferred_size,
-                description: """
-                Byte size which will be a target for Payloader. During fragmentation
-                into FU-A payloads, every (but last) payload will be of preferred size. During
-                aggregation into STAP-A payloads Payloader will send payload if it exceeds
-                preferred size.
+                In `:single_nalu` mode, payloader puts exactly one NAL unit
+                into each payload, altering only RTP metadata. `:non_interleaved`
+                mode handles also FU-A and STAP-A packetization. See
+                [RFC 6184](https://tools.ietf.org/html/rfc6184) for details.
                 """
               ]
 
@@ -65,17 +47,22 @@ defmodule Membrane.RTP.H264.Payloader do
   defmodule State do
     @moduledoc false
     defstruct [
-      :max_single_size,
-      :min_single_size,
-      :preferred_size,
-      :payload_type,
-      :stap_acc
+      :max_payload_size,
+      :mode,
+      stap_acc: %{
+        payloads: [],
+        # header size
+        byte_size: 1,
+        metadata: nil,
+        nri: 0,
+        reserved: 0
+      }
     ]
   end
 
   @impl true
   def handle_init(options) do
-    {:ok, Map.merge(%State{stap_acc: @empty_stap_acc}, Map.from_struct(options))}
+    {:ok, Map.merge(%State{}, Map.from_struct(options))}
   end
 
   @impl true
@@ -89,11 +76,21 @@ defmodule Membrane.RTP.H264.Payloader do
   end
 
   @impl true
-  def handle_process(:input, %Buffer{payload: payload} = buffer, _ctx, state) do
-    type = get_unit_type(payload, state)
-    {acc_buffers, state} = handle_accumulator(type, buffer, state)
-    {new_buffers, state} = handle_unit_type(type, buffer, state)
-    {{:ok, buffer: {:output, acc_buffers ++ new_buffers}, redemand: :output}, state}
+  def handle_process(:input, %Buffer{} = buffer, _ctx, state) do
+    buffer = Map.update!(buffer, :payload, &delete_prefix/1)
+
+    {buffers, state} =
+      withl mode: :non_interleaved <- state.mode,
+            stap_a: {:deny, stap_acc_bufs, state} <- try_stap_a(buffer, state),
+            single_nalu: :deny <- try_single_nalu(buffer, state) do
+        {stap_acc_bufs ++ use_fu_a(buffer, state), state}
+      else
+        mode: :single_nalu -> {use_single_nalu(buffer), state}
+        stap_a: {:accept, buffers, state} -> {buffers, state}
+        single_nalu: {:accept, buffer} -> {stap_acc_bufs ++ [buffer], state}
+      end
+
+    {{:ok, buffer: {:output, buffers}, redemand: :output}, state}
   end
 
   @impl true
@@ -103,101 +100,82 @@ defmodule Membrane.RTP.H264.Payloader do
 
   @impl true
   def handle_end_of_stream(:input, _ctx, state) do
-    {buffers, state} = flush_accumulator(state)
+    {buffers, state} = flush_stap_acc(state)
     {{:ok, buffer: {:output, buffers}, end_of_stream: :output}, state}
   end
 
-  defp get_unit_type(payload, state) do
-    size = byte_size(payload)
+  defp delete_prefix(<<0, 0, 0, 1, nal::binary>>), do: nal
+  defp delete_prefix(<<0, 0, 1, nal::binary>>), do: nal
 
-    cond do
-      size < state.min_single_size -> :stap_a
-      size < state.max_single_size -> :single_nalu
-      true -> :fu_a
+  defp try_stap_a(buffer, state) do
+    with {:deny, acc_buffers, state} <- do_try_stap_a(buffer, state) do
+      # try again, after potential accumulator flush
+      {result, buffers, state} = do_try_stap_a(buffer, state)
+      {result, acc_buffers ++ buffers, state}
     end
   end
 
-  defp handle_accumulator(
-         :stap_a,
-         %Buffer{payload: payload, metadata: %{timestamp: timestamp}},
-         %{
-           stap_acc: %{metadata: %{timestamp: timestamp}, byte_size: size},
-           max_single_size: max_size
-         } = state
-       )
-       when size + byte_size(payload) < max_size,
-       do: {[], state}
+  defp do_try_stap_a(buffer, state) do
+    %Buffer{payload: payload, metadata: metadata} = buffer
+    %{stap_acc: stap_acc} = state
+    size = stap_acc.byte_size + StapA.aggregation_unit_size(payload)
+    metadata_match? = !stap_acc.metadata || stap_acc.metadata.timestamp == metadata.timestamp
 
-  defp handle_accumulator(_type, _buffer, state), do: flush_accumulator(state)
+    if metadata_match? and size <= state.max_payload_size do
+      <<r::1, nri::2, _type::5, _rest::binary()>> = payload
 
-  defp flush_accumulator(%{stap_acc: stap_acc} = state) do
+      stap_acc = %{
+        stap_acc
+        | payloads: [payload | stap_acc.payloads],
+          byte_size: size,
+          metadata: stap_acc.metadata || metadata,
+          reserved: stap_acc.reserved * r,
+          nri: min(stap_acc.nri, nri)
+      }
+
+      {:accept, [], %{state | stap_acc: stap_acc}}
+    else
+      {buffers, state} = flush_stap_acc(state)
+      {:deny, buffers, state}
+    end
+  end
+
+  defp flush_stap_acc(%{stap_acc: stap_acc} = state) do
     buffers =
       case stap_acc.payloads do
         [] ->
           []
 
         [payload] ->
-          payload = StapA.delete_size(payload)
+          # use single nalu
           [%Buffer{payload: payload, metadata: stap_acc.metadata} |> set_marker()]
 
         payloads ->
-          r = stap_acc.stap_a_reserved
-          nri = stap_acc.stap_a_nri
-
-          payload =
-            payloads
-            |> Enum.reverse()
-            |> IO.iodata_to_binary()
-            |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:stap_a))
-
+          payload = StapA.serialize(payloads, stap_acc.reserved, stap_acc.nri)
           [%Buffer{payload: payload, metadata: stap_acc.metadata} |> set_marker()]
       end
 
-    {buffers, %{state | stap_acc: @empty_stap_acc}}
+    {buffers, %{state | stap_acc: %State{}.stap_acc}}
   end
 
-  defp handle_unit_type(:single_nalu, buffer, state) do
-    buffer = Map.update!(buffer, :payload, &delete_prefix/1) |> set_marker()
-    {[buffer], state}
+  defp try_single_nalu(buffer, state) do
+    if byte_size(buffer.payload) <= state.max_payload_size do
+      {:accept, use_single_nalu(buffer)}
+    else
+      :deny
+    end
   end
 
-  defp handle_unit_type(:fu_a, buffer, state) do
-    buffers =
-      buffer.payload
-      |> delete_prefix
-      |> FU.fragmentate(state.preferred_size)
-      |> Enum.map(&%Buffer{buffer | payload: &1})
-      |> Enum.map(&Bunch.Struct.put_in(&1, [:metadata, :rtp], %{marker: false}))
-      |> List.update_at(-1, &set_marker/1)
-
-    {buffers, state}
+  defp use_single_nalu(buffer) do
+    set_marker(buffer)
   end
 
-  defp handle_unit_type(:stap_a, buffer, state) do
-    state = update_stap_a_properties(delete_prefix(buffer.payload), buffer.metadata, state)
-    {[], state}
-  end
-
-  defp delete_prefix(@frame_prefix_longer <> rest), do: rest
-  defp delete_prefix(@frame_prefix_shorter <> rest), do: rest
-
-  defp update_stap_a_properties(
-         <<r::1, nri::2, _type::5, _rest::binary()>> = payload,
-         metadata,
-         %{stap_acc: stap_acc} = state
-       ) do
-    payload = StapA.add_size(payload)
-
-    stap_acc = %{
-      stap_acc
-      | payloads: [payload | stap_acc.payloads],
-        byte_size: stap_acc.byte_size + byte_size(payload),
-        metadata: stap_acc.metadata || metadata,
-        stap_a_reserved: stap_acc.stap_a_reserved * r,
-        stap_a_nri: min(stap_acc.stap_a_nri, nri)
-    }
-
-    %{state | stap_acc: stap_acc}
+  defp use_fu_a(buffer, state) do
+    buffer.payload
+    |> FU.serialize(state.max_payload_size)
+    |> Enum.map(&%Buffer{buffer | payload: &1})
+    |> Enum.map(&Bunch.Struct.put_in(&1, [:metadata, :rtp], %{marker: false}))
+    |> List.update_at(-1, &set_marker/1)
   end
 
   defp set_marker(buffer) do
