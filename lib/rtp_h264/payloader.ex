@@ -19,7 +19,7 @@ defmodule Membrane.RTP.H264.Payloader do
   @frame_prefix_longer <<1::32>>
   @min_single_size 512
   @preferred_size 1024
-  @max_single_size 16_384
+  @max_single_size 1200
 
   @empty_stap_acc %{
     payloads: [],
@@ -57,10 +57,7 @@ defmodule Membrane.RTP.H264.Payloader do
               ]
 
   def_input_pad :input,
-    caps: [
-      {H264, stream_format: :byte_stream},
-      {RemoteStream, content_format: one_of([nil, H264]), type: :packetized}
-    ],
+    caps: {H264, stream_format: :byte_stream, alignment: :nal},
     demand_unit: :buffers
 
   def_output_pad :output, caps: RTP
@@ -141,7 +138,7 @@ defmodule Membrane.RTP.H264.Payloader do
 
         [payload] ->
           payload = StapA.delete_size(payload)
-          [%Buffer{payload: payload, metadata: stap_acc.metadata}]
+          [%Buffer{payload: payload, metadata: stap_acc.metadata} |> set_marker()]
 
         payloads ->
           r = stap_acc.stap_a_reserved
@@ -153,14 +150,15 @@ defmodule Membrane.RTP.H264.Payloader do
             |> IO.iodata_to_binary()
             |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:stap_a))
 
-          [%Buffer{payload: payload, metadata: stap_acc.metadata}]
+          [%Buffer{payload: payload, metadata: stap_acc.metadata} |> set_marker()]
       end
 
     {buffers, %{state | stap_acc: @empty_stap_acc}}
   end
 
   defp handle_unit_type(:single_nalu, buffer, state) do
-    {[Map.update!(buffer, :payload, &delete_prefix/1)], state}
+    buffer = Map.update!(buffer, :payload, &delete_prefix/1) |> set_marker()
+    {[buffer], state}
   end
 
   defp handle_unit_type(:fu_a, buffer, state) do
@@ -169,6 +167,8 @@ defmodule Membrane.RTP.H264.Payloader do
       |> delete_prefix
       |> FU.fragmentate(state.preferred_size)
       |> Enum.map(&%Buffer{buffer | payload: &1})
+      |> Enum.map(&Bunch.Struct.put_in(&1, [:metadata, :rtp], %{marker: false}))
+      |> List.update_at(-1, &set_marker/1)
 
     {buffers, state}
   end
@@ -198,5 +198,10 @@ defmodule Membrane.RTP.H264.Payloader do
     }
 
     %{state | stap_acc: stap_acc}
+  end
+
+  defp set_marker(buffer) do
+    marker = Map.has_key?(buffer.metadata.h264, :end_access_unit)
+    Bunch.Struct.put_in(buffer, [:metadata, :rtp], %{marker: marker})
   end
 end

@@ -31,29 +31,25 @@ defmodule Membrane.RTP.H264.StapA do
   """
   @spec parse(binary()) :: {:ok, [binary()]} | {:error, :packet_malformed}
   def parse(data) do
-    with {:ok, value} <- parse_batch(data) do
-      {:ok, Enum.reverse(value)}
-    end
+    do_parse(data, [])
   end
+
+  defp do_parse(<<>>, acc), do: {:ok, Enum.reverse(acc)}
+
+  defp do_parse(<<size::16, nalu::binary-size(size), rest::binary>>, acc),
+    do: do_parse(rest, [nalu | acc])
+
+  defp do_parse(_data, _acc), do: {:error, :packet_malformed}
 
   @doc """
   Adds NALU size to unit
   """
   @spec add_size(binary()) :: binary()
-  def add_size(<<_nalu_hdr::binary-1, rest::binary>> = data),
-    do: <<byte_size(rest)::size(16)>> <> data
+  def add_size(nalu), do: <<byte_size(nalu)::16, nalu::binary>>
 
   @doc """
   Removes NALU size from unit
   """
   @spec delete_size(binary()) :: binary()
   def delete_size(<<_size::size(16), rest::binary>>), do: rest
-
-  defp parse_batch(data, acc \\ [])
-  defp parse_batch(<<>>, acc), do: {:ok, acc}
-
-  defp parse_batch(<<size::16, nalu_hdr::binary-1, nalu::binary-size(size), rest::binary>>, acc),
-    do: parse_batch(rest, [nalu_hdr <> nalu | acc])
-
-  defp parse_batch(_, _), do: {:error, :packet_malformed}
 end
