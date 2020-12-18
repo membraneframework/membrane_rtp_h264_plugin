@@ -13,9 +13,7 @@ defmodule Membrane.RTP.H264.StapATest do
       |> STAPFactory.binaries_into_stap()
       |> StapA.parse()
       ~> ({:ok, result} -> Enum.zip(result, test_data))
-      |> Enum.each(fn {<<_nalu_hdr::8, a::binary>>, b} ->
-        assert a == b
-      end)
+      |> Enum.each(fn {a, b} -> assert a == b end)
     end
 
     test "returns error when packet is malformed" do

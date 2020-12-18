@@ -24,8 +24,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
       |> Enum.each(fn elem ->
         assert_sink_buffer(pid, :sink, buffer)
         assert %Buffer{payload: payload} = buffer
-        assert <<1::32, hdr::binary-size(1), ^elem::binary()>> = payload
-        assert hdr == STAPFactory.example_nalu_hdr()
+        assert <<1::32, elem::binary()>> == payload
       end)
     end
 

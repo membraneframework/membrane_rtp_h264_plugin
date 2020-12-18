@@ -48,7 +48,6 @@ defmodule Membrane.RTP.H264.Depayloader do
         log_malformed_buffer(buffer, reason)
         {{:ok, redemand: :output}, %State{state | parser_acc: nil}}
     end
-    # {{:ok, buffer: {:output, buffer}, redemand: :output}, state}
   end
 
   @impl true
