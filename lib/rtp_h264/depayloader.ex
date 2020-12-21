@@ -10,7 +10,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   use Membrane.Log
 
   alias Membrane.Buffer
-  alias Membrane.RTP
+  alias Membrane.{RTP, RemoteStream}
   alias Membrane.Caps.Video.H264
   alias Membrane.Event.Discontinuity
   alias Membrane.RTP.H264.{FU, NAL, StapA}
@@ -18,12 +18,8 @@ defmodule Membrane.RTP.H264.Depayloader do
   @frame_prefix <<1::32>>
   @type sequence_number :: 0..65_535
 
-  def_output_pad :output,
-    caps: {H264, stream_format: :byte_stream}
-
-  def_input_pad :input,
-    caps: {RTP, payload_type: range(96, 127)},
-    demand_unit: :buffers
+  def_input_pad :input, caps: RTP, demand_unit: :buffers
+  def_output_pad :output, caps: {RemoteStream, content_format: H264, type: :packetized}
 
   defmodule State do
     @moduledoc false
@@ -36,7 +32,8 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   @impl true
   def handle_caps(:input, _caps, _context, state) do
-    {:ok, state}
+    caps = %RemoteStream{content_format: H264, type: :packetized}
+    {{:ok, caps: {:output, caps}}, state}
   end
 
   @impl true
