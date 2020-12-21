@@ -179,7 +179,7 @@ defmodule Membrane.RTP.H264.Payloader do
   end
 
   defp set_marker(buffer) do
-    marker = Map.has_key?(buffer.metadata.h264, :end_access_unit)
+    marker = Map.get(buffer.metadata.h264, :end_access_unit, false)
     Bunch.Struct.put_in(buffer, [:metadata, :rtp], %{marker: marker})
   end
 end
