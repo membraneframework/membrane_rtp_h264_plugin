@@ -16,7 +16,6 @@ defmodule Membrane.RTP.H264.Depayloader do
   alias Membrane.RTP.H264.{FU, NAL, StapA}
 
   @frame_prefix <<1::32>>
-  @type sequence_number :: 0..65_535
 
   def_input_pad :input, caps: RTP, demand_unit: :buffers
   def_output_pad :output, caps: {RemoteStream, content_format: H264, type: :packetized}

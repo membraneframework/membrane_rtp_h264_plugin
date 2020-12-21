@@ -174,12 +174,16 @@ defmodule Membrane.RTP.H264.Payloader do
     buffer.payload
     |> FU.serialize(state.max_payload_size)
     |> Enum.map(&%Buffer{buffer | payload: &1})
-    |> Enum.map(&Bunch.Struct.put_in(&1, [:metadata, :rtp], %{marker: false}))
+    |> Enum.map(&clear_marker/1)
     |> List.update_at(-1, &set_marker/1)
   end
 
   defp set_marker(buffer) do
     marker = Map.get(buffer.metadata.h264, :end_access_unit, false)
     Bunch.Struct.put_in(buffer, [:metadata, :rtp], %{marker: marker})
+  end
+
+  defp clear_marker(buffer) do
+    Bunch.Struct.put_in(buffer, [:metadata, :rtp], %{marker: false})
   end
 end
