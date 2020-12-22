@@ -1,7 +1,7 @@
 defmodule Membrane.RTP.H264.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.4.0"
   @github_url "https://github.com/membraneframework/membrane_rtp_h264_plugin"
 
   def project do
@@ -11,9 +11,9 @@ defmodule Membrane.RTP.H264.MixProject do
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      description: "Membrane Multimedia Framework (RTP H264 Plugin)",
+      description: "Membrane RTP payloader and depayloader for H264",
       package: package(),
-      name: "Membrane Plugin: RTP H264",
+      name: "Membrane RTP H264 Plugin",
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membraneframework.org",
@@ -37,7 +37,7 @@ defmodule Membrane.RTP.H264.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: ["README.md", "LICENSE"],
       source_ref: "v#{@version}",
       nest_modules_by_prefix: [
         Membrane.RTP.H264
@@ -62,7 +62,7 @@ defmodule Membrane.RTP.H264.MixProject do
       {:membrane_core, "~> 0.6.0"},
       {:membrane_rtp_format, "~> 0.3.0"},
       {:membrane_remote_stream_format, "~> 0.1.0"},
-      {:membrane_caps_video_h264, "~> 0.1"},
+      {:membrane_caps_video_h264, "~> 0.2.0"},
       # Dev
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0", only: :dev, runtime: false},
