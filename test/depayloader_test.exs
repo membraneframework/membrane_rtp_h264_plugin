@@ -55,8 +55,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
       |> Enum.zip(data)
       |> Enum.each(fn {result, original_data} ->
         assert %Buffer{payload: result_data} = result
-        assert <<1::32, nalu_hdr::binary-size(1), ^original_data::binary>> = result_data
-        assert nalu_hdr == STAPFactory.example_nalu_hdr()
+        assert <<1::32, ^original_data::binary>> = result_data
       end)
     end
 

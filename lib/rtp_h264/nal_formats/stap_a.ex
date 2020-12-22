@@ -26,34 +26,29 @@ defmodule Membrane.RTP.H264.StapA do
   """
   use Bunch
 
-  @doc """
-  Parses a STAP type A
-  """
+  alias Membrane.RTP.H264.NAL
+
   @spec parse(binary()) :: {:ok, [binary()]} | {:error, :packet_malformed}
   def parse(data) do
-    with {:ok, value} <- parse_batch(data) do
-      {:ok, Enum.reverse(value)}
-    end
+    do_parse(data, [])
   end
 
-  @doc """
-  Adds NALU size to unit
-  """
-  @spec add_size(binary()) :: binary()
-  def add_size(<<_nalu_hdr::binary-1, rest::binary>> = data),
-    do: <<byte_size(rest)::size(16)>> <> data
+  defp do_parse(<<>>, acc), do: {:ok, Enum.reverse(acc)}
 
-  @doc """
-  Removes NALU size from unit
-  """
-  @spec delete_size(binary()) :: binary()
-  def delete_size(<<_size::size(16), rest::binary>>), do: rest
+  defp do_parse(<<size::16, nalu::binary-size(size), rest::binary>>, acc),
+    do: do_parse(rest, [nalu | acc])
 
-  defp parse_batch(data, acc \\ [])
-  defp parse_batch(<<>>, acc), do: {:ok, acc}
+  defp do_parse(_data, _acc), do: {:error, :packet_malformed}
 
-  defp parse_batch(<<size::16, nalu_hdr::binary-1, nalu::binary-size(size), rest::binary>>, acc),
-    do: parse_batch(rest, [nalu_hdr <> nalu | acc])
+  @spec aggregation_unit_size(binary()) :: pos_integer()
+  def aggregation_unit_size(nalu), do: byte_size(nalu) + 2
 
-  defp parse_batch(_, _), do: {:error, :packet_malformed}
+  @spec serialize([binary], 0..1, 0..3) :: binary
+  def serialize(payloads, reserved, nri) do
+    payloads
+    |> Enum.reverse()
+    |> Enum.map(&<<byte_size(&1)::16, &1::binary>>)
+    |> IO.iodata_to_binary()
+    |> NAL.Header.add_header(reserved, nri, NAL.Header.encode_type(:stap_a))
+  end
 end
