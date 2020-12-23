@@ -1,42 +1,21 @@
-# Membrane Multimedia Framework: RTP H264
+# Membrane RTP H264 plugin
+[![Hex.pm](https://img.shields.io/hexpm/v/membrane_rtp_h264_plugin.svg)](https://hex.pm/packages/membrane_rtp_h264_plugin)
+[![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/membrane_rtp_h264_plugin/)
 [![CircleCI](https://circleci.com/gh/membraneframework/membrane_rtp_h264_plugin.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane_rtp_h264_plugin)
 
-This package provides elements that can be used for depayloading H.264 video.
+RTP payloader and depayloader for H264.
 
 It is part of [Membrane Multimedia Framework](https://membraneframework.org).
+
+## Usage
+
+This plugin registers default payloader and depayloader for H264 [RTP payload format](https://hexdocs.pm/membrane_rtp_format/Membrane.RTP.PayloadFormat.html) and thus can be automatically used by [Membrane RTP plugin](https://hexdocs.pm/membrane_rtp_plugin) whenever added to dependencies. Of course it can be manually linked in a custom pipeline too.
 
 ## Supported packetization modes
 
 This package currently supports only
-Single Nal Unit Mode and Non-Interleaved packetization modes.
-Interleaved mode is not currently supported.
-
-## Abbreviations
-
-* DON:        Decoding Order Number
-* DONB:       Decoding Order Number Base
-* DOND:       Decoding Order Number Difference
-* FEC:        Forward Error Correction
-* FU:         Fragmentation Unit
-* IDR:        Instantaneous Decoding Refresh
-* IEC:        International Electrotechnical Commission
-* ISO:        International Organization for Standardization
-* ITU-T:      International Telecommunication Union, Telecommunication Standardization Sector
-* MANE:       Media-Aware Network Element
-* MTAP:       Multi-Time Aggregation Packet
-* MTAP16:     MTAP with 16-bit timestamp offset
-* MTAP24:     MTAP with 24-bit timestamp offset
-* NAL:        Network Abstraction Layer
-* NALU:       NAL Unit
-* SAR:        Sample Aspect Ratio
-* SEI:        Supplemental Enhancement Information
-* STAP:       Single-Time Aggregation Packet
-* STAP-A:     STAP type A
-* STAP-B:     STAP type B
-* TS:         Timestamp
-* VCL:        Video Coding Layer
-* VUI:        Video Usability Information
-
+Single Nal Unit Mode and Non-Interleaved (STAP-A and FU-A) packetization modes.
+Interleaved mode is currently not supported. Please refer to [RFC 6184](https://tools.ietf.org/html/rfc6184) for details.
 
 ## Installation
 
@@ -45,7 +24,7 @@ The package can be installed by adding `membrane_rtp_h264_plugin` to your list o
 ```elixir
 def deps do
   [
-    {:membrane_rtp_h264_plugin, "~> 0.3.0-alpha"}
+    {:membrane_rtp_h264_plugin, "~> 0.4.0"}
   ]
 end
 ```
