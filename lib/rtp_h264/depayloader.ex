@@ -60,7 +60,8 @@ defmodule Membrane.RTP.H264.Depayloader do
   def handle_event(:input, %Discontinuity{} = event, _context, %State{parser_acc: %FU{}} = state),
     do: {{:ok, forward: event}, %State{state | parser_acc: nil}}
 
-  def handle_event(:input, event, _context, state), do: {{:ok, forward: event}, state}
+  @impl true
+  def handle_event(pad, event, context, state), do: super(pad, event, context, state)
 
   defp handle_unit_type(:single_nalu, _nal, buffer, state) do
     buffer_output(buffer.payload, buffer, state)
