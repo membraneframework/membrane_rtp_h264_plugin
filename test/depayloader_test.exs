@@ -46,7 +46,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
 
       buffer = %Buffer{payload: STAPFactory.into_stap_unit(data)}
 
-      assert {{:ok, actions}, state} =
+      assert {{:ok, actions}, _state} =
                Depayloader.handle_process(:input, buffer, nil, @empty_state)
 
       assert [buffer: {:output, buffers}, redemand: :output] = actions

@@ -49,6 +49,8 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         assert_sink_buffer(pid, :sink, %Buffer{payload: data})
         assert <<1::32, ^glued_data::binary()>> = data
       end)
+
+      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
     end
   end
 end
