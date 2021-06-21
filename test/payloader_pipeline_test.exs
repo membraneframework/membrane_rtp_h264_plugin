@@ -58,6 +58,8 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
             assert rest == <<0::size(@max_size)-unit(8)>>
         end
       end)
+
+      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
     end
 
     test "payloads Stap A" do
@@ -82,6 +84,8 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
       assert <<0::1, 0::2, ^type::5, rest::binary()>> = data
       assert {:ok, glued} = StapA.parse(rest)
       assert glued == List.duplicate(single_unit, number_of_packets)
+
+      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
     end
 
     test "payloads single NAL units" do
@@ -104,6 +108,8 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         assert metadata.rtp.marker == true
         assert <<i::size(@max_size)-unit(8)>> == data
       end)
+
+      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
     end
   end
 end
