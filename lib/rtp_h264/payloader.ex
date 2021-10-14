@@ -53,6 +53,7 @@ defmodule Membrane.RTP.H264.Payloader do
         payloads: [],
         # header size
         byte_size: 1,
+        dts: 0,
         metadata: nil,
         nri: 0,
         reserved: 0
@@ -116,19 +117,19 @@ defmodule Membrane.RTP.H264.Payloader do
   end
 
   defp do_try_stap_a(buffer, state) do
-    %Buffer{payload: payload, metadata: metadata} = buffer
     %{stap_acc: stap_acc} = state
-    size = stap_acc.byte_size + StapA.aggregation_unit_size(payload)
-    metadata_match? = !stap_acc.metadata || stap_acc.metadata.timestamp == metadata.timestamp
+    size = stap_acc.byte_size + StapA.aggregation_unit_size(buffer.payload)
+    metadata_match? = !stap_acc.metadata || stap_acc.dts == Buffer.get_dts_or_pts(buffer)
 
     if metadata_match? and size <= state.max_payload_size do
-      <<r::1, nri::2, _type::5, _rest::binary()>> = payload
+      <<r::1, nri::2, _type::5, _rest::binary()>> = buffer.payload
 
       stap_acc = %{
         stap_acc
-        | payloads: [payload | stap_acc.payloads],
+        | payloads: [buffer.payload | stap_acc.payloads],
           byte_size: size,
-          metadata: stap_acc.metadata || metadata,
+          metadata: stap_acc.metadata || buffer.metadata,
+          dts: Buffer.get_dts_or_pts(buffer),
           reserved: stap_acc.reserved * r,
           nri: min(stap_acc.nri, nri)
       }
@@ -148,11 +149,11 @@ defmodule Membrane.RTP.H264.Payloader do
 
         [payload] ->
           # use single nalu
-          [%Buffer{payload: payload, metadata: stap_acc.metadata} |> set_marker()]
+          [%Buffer{payload: payload, metadata: stap_acc.metadata, dts: stap_acc.dts} |> set_marker()]
 
         payloads ->
           payload = StapA.serialize(payloads, stap_acc.reserved, stap_acc.nri)
-          [%Buffer{payload: payload, metadata: stap_acc.metadata} |> set_marker()]
+          [%Buffer{payload: payload, metadata: stap_acc.metadata, dts: stap_acc.dts} |> set_marker()]
       end
 
     {buffers, %{state | stap_acc: %State{}.stap_acc}}
