@@ -8,7 +8,7 @@ defmodule Membrane.Support.DepayloaderTestingPipeline do
   def start_pipeline(data) do
     options = %Pipeline.Options{
       elements: [
-        source: %Testing.Source{output: data},
+        source: %Testing.Source{output: data, caps: %Membrane.RTP{}},
         depayloader: Depayloader,
         sink: %Testing.Sink{}
       ]
