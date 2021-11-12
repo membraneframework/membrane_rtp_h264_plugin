@@ -36,8 +36,8 @@ defmodule Membrane.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_process(:input, %Buffer{payload: payload} = buffer, _ctx, state) do
-    with {:ok, {header, _} = nal} <- NAL.Header.parse_unit_header(payload),
+  def handle_process(:input, buffer, _ctx, state) do
+    with {:ok, {header, _} = nal} <- NAL.Header.parse_unit_header(buffer.payload),
          unit_type = NAL.Header.decode_type(header),
          {{:ok, actions}, new_state} <-
            handle_unit_type(unit_type, nal, buffer, state) do

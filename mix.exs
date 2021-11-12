@@ -59,7 +59,7 @@ defmodule Membrane.RTP.H264.MixProject do
   defp deps do
     [
       {:bunch, "~> 1.2"},
-      {:membrane_core, github: "membraneframework/membrane-core", branch: "add-timestamps-to-buffer", override: true},
+      {:membrane_core, "~> 0.8.0"},
       {:membrane_rtp_format, "~> 0.3.0"},
       {:membrane_caps_video_h264, "~> 0.2.0"},
       # Dev
