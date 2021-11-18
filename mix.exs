@@ -1,7 +1,7 @@
 defmodule Membrane.RTP.H264.MixProject do
   use Mix.Project
 
-  @version "0.5.1"
+  @version "0.6.0"
   @github_url "https://github.com/membraneframework/membrane_rtp_h264_plugin"
 
   def project do
@@ -59,7 +59,7 @@ defmodule Membrane.RTP.H264.MixProject do
   defp deps do
     [
       {:bunch, "~> 1.2"},
-      {:membrane_core, "~> 0.7.0"},
+      {:membrane_core, "~> 0.8.0"},
       {:membrane_rtp_format, "~> 0.3.0"},
       {:membrane_caps_video_h264, "~> 0.2.0"},
       # Dev
