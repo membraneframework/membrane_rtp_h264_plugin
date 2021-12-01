@@ -149,11 +149,18 @@ defmodule Membrane.RTP.H264.Payloader do
 
         [payload] ->
           # use single nalu
-          [%Buffer{payload: payload, metadata: stap_acc.metadata, pts: stap_acc.pts} |> set_marker()]
+          [
+            %Buffer{payload: payload, metadata: stap_acc.metadata, pts: stap_acc.pts}
+            |> set_marker()
+          ]
 
         payloads ->
           payload = StapA.serialize(payloads, stap_acc.reserved, stap_acc.nri)
-          [%Buffer{payload: payload, metadata: stap_acc.metadata, pts: stap_acc.pts} |> set_marker()]
+
+          [
+            %Buffer{payload: payload, metadata: stap_acc.metadata, pts: stap_acc.pts}
+            |> set_marker()
+          ]
       end
 
     {buffers, %{state | stap_acc: %State{}.stap_acc}}
