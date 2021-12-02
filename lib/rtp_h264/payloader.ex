@@ -54,6 +54,7 @@ defmodule Membrane.RTP.H264.Payloader do
         # header size
         byte_size: 1,
         pts: 0,
+        dts: 0,
         metadata: nil,
         nri: 0,
         reserved: 0
@@ -130,6 +131,7 @@ defmodule Membrane.RTP.H264.Payloader do
           byte_size: size,
           metadata: stap_acc.metadata || buffer.metadata,
           pts: buffer.pts,
+          dts: buffer.dts,
           reserved: stap_acc.reserved * r,
           nri: min(stap_acc.nri, nri)
       }
@@ -150,7 +152,12 @@ defmodule Membrane.RTP.H264.Payloader do
         [payload] ->
           # use single nalu
           [
-            %Buffer{payload: payload, metadata: stap_acc.metadata, pts: stap_acc.pts}
+            %Buffer{
+              payload: payload,
+              metadata: stap_acc.metadata,
+              pts: stap_acc.pts,
+              dts: stap_acc.dts
+            }
             |> set_marker()
           ]
 
@@ -158,7 +165,12 @@ defmodule Membrane.RTP.H264.Payloader do
           payload = StapA.serialize(payloads, stap_acc.reserved, stap_acc.nri)
 
           [
-            %Buffer{payload: payload, metadata: stap_acc.metadata, pts: stap_acc.pts}
+            %Buffer{
+              payload: payload,
+              metadata: stap_acc.metadata,
+              pts: stap_acc.pts,
+              dts: stap_acc.dts
+            }
             |> set_marker()
           ]
       end
