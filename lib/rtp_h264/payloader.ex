@@ -13,7 +13,7 @@ defmodule Membrane.RTP.H264.Payloader do
 
   alias Membrane.Buffer
   alias Membrane.RTP
-  alias Membrane.Caps.Video.H264
+  alias Membrane.H264
   alias Membrane.RTP.H264.{FU, StapA}
 
   def_options max_payload_size: [

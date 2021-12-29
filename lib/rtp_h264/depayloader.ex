@@ -11,7 +11,7 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   alias Membrane.Buffer
   alias Membrane.{RTP, RemoteStream}
-  alias Membrane.Caps.Video.H264
+  alias Membrane.H264
   alias Membrane.Event.Discontinuity
   alias Membrane.RTP.H264.{FU, NAL, StapA}
 
