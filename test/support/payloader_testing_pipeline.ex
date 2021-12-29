@@ -1,6 +1,6 @@
 defmodule Membrane.Support.PayloaderTestingPipeline do
   @moduledoc false
-  alias Membrane.Caps.Video.H264
+  alias Membrane.H264
   alias Membrane.RTP.H264.Payloader
   alias Membrane.Testing
   alias Testing.Pipeline
