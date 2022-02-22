@@ -41,9 +41,6 @@ defmodule Membrane.RTP.H264.Payloader do
     caps: {H264, stream_format: :byte_stream, alignment: :nal},
     demand_mode: :auto
 
-  # demand_unit: :buffers
-
-  # def_output_pad :output, caps: RTP
   def_output_pad :output, caps: RTP, demand_mode: :auto
 
   defmodule State do

@@ -26,6 +26,8 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         assert %Buffer{payload: payload} = buffer
         assert <<1::32, elem::binary()>> == payload
       end)
+
+      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
     end
 
     test "does not crash when parsing fu" do

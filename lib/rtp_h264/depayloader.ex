@@ -75,7 +75,7 @@ defmodule Membrane.RTP.H264.Depayloader do
       {:incomplete, fu} ->
         {{:ok, []}, %State{state | parser_acc: fu}}
 
-      {:error, _} = error ->
+      {:error, _reason} = error ->
         error
     end
   end
