@@ -3,6 +3,7 @@ defmodule Membrane.RTP.H264.Plugin.App do
   use Application
   alias Membrane.RTP.{H264, PayloadFormat}
 
+  @impl true
   def start(_type, _args) do
     PayloadFormat.register(%PayloadFormat{
       encoding_name: :H264,

@@ -17,10 +17,7 @@ defmodule Membrane.RTP.H264.MixProject do
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membraneframework.org",
-      deps: deps(),
-      aliases: [
-        credo: "credo --ignore Credo.Check.Refactor.PipeChainStart"
-      ]
+      deps: deps()
     ]
   end
 
@@ -58,10 +55,11 @@ defmodule Membrane.RTP.H264.MixProject do
 
   defp deps do
     [
-      {:bunch, "~> 1.2"},
-      {:membrane_core, "~> 0.8.0"},
+      # {:membrane_core, path: "../membrane_core", override: true},
+      {:membrane_core, "~> 0.9.0", override: true},
       {:membrane_rtp_format, "~> 0.3.0"},
       {:membrane_h264_format, "~> 0.3.0"},
+      {:bunch, "~> 1.2"},
       # Dev
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0", only: :dev, runtime: false},

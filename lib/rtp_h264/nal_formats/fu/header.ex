@@ -54,7 +54,7 @@ defmodule Membrane.RTP.H264.FU.Header do
     {:ok, {header, rest}}
   end
 
-  def parse(_), do: {:error, :packet_malformed}
+  def parse(_binary), do: {:error, :packet_malformed}
 
   @doc """
   Adds FU header
