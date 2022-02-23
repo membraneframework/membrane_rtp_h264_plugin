@@ -1,14 +1,15 @@
 defmodule Membrane.Support.Formatters.FUFactory do
   @moduledoc false
   use Bunch
-  @max_fixtures 5
 
   alias Membrane.Support.Fixtures
+
+  @max_fixtures 5
 
   @spec glued_fixtures() :: binary()
   def glued_fixtures do
     get_all_fixtures()
-    |> Enum.reduce(<<>>, fn <<_::8, data::binary>>, acc -> acc <> data end)
+    |> Enum.reduce(<<>>, fn <<_header::8, data::binary>>, acc -> acc <> data end)
     ~> (<<0::1, 2::2, 1::5>> <> &1)
   end
 
@@ -19,7 +20,7 @@ defmodule Membrane.Support.Formatters.FUFactory do
   @spec last() :: binary()
   def last, do: get_fixture(@max_fixtures)
 
-  @spec precede_with_fu_nal_header(binary()) :: <<_::8, _::_*8>>
+  @spec precede_with_fu_nal_header(binary()) :: binary
   def precede_with_fu_nal_header(data) when is_binary(data), do: <<0::1, 2::2, 28::5>> <> data
 
   defp fixture_name(which), do: "fu_nal_#{which}_#{@max_fixtures}.bin"

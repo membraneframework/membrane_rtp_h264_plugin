@@ -26,6 +26,8 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         assert %Buffer{payload: payload} = buffer
         assert <<1::32, elem::binary()>> == payload
       end)
+
+      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
     end
 
     test "does not crash when parsing fu" do
@@ -34,7 +36,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
 
       {:ok, pid} =
         data_base
-        |> Enum.flat_map(fn _ -> FUFactory.get_all_fixtures() end)
+        |> Enum.flat_map(fn _i -> FUFactory.get_all_fixtures() end)
         |> Enum.map(fn binary -> <<0::1, 2::2, 28::5>> <> binary end)
         |> Enum.with_index()
         |> Enum.map(fn {data, seq_num} ->
@@ -45,7 +47,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
 
       Membrane.Pipeline.play(pid)
 
-      Enum.each(data_base, fn _ ->
+      Enum.each(data_base, fn _i ->
         assert_sink_buffer(pid, :sink, %Buffer{payload: data})
         assert <<1::32, ^glued_data::binary()>> = data
       end)

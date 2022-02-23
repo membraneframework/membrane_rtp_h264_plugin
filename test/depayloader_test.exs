@@ -32,7 +32,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
                |> Enum.reduce(@empty_state, fn buffer, prev_state ->
                  Depayloader.handle_process(:input, buffer, nil, prev_state)
                  ~> (
-                   {{:ok, redemand: :output}, %Depayloader.State{} = state} -> state
+                   {{:ok, []}, %Depayloader.State{} = state} -> state
                    {{:ok, actions}, state} -> {actions, state}
                  )
                end)
@@ -49,7 +49,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
       assert {{:ok, actions}, _state} =
                Depayloader.handle_process(:input, buffer, nil, @empty_state)
 
-      assert [buffer: {:output, buffers}, redemand: :output] = actions
+      assert [buffer: {:output, buffers}] = actions
 
       buffers
       |> Enum.zip(data)
@@ -57,11 +57,6 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
         assert %Buffer{payload: result_data} = result
         assert <<1::32, ^original_data::binary>> = result_data
       end)
-    end
-
-    test "bytes unit results in error" do
-      {{:error, :not_supported_unit}, @empty_state} =
-        Depayloader.handle_demand(:output, nil, :bytes, nil, @empty_state)
     end
   end
 
@@ -87,39 +82,35 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
 
   describe "Depayloader resets internal state in case of error and redemands" do
     test "when parsing Fragmentation Unit" do
-      %Buffer{
-        metadata: %{rtp: %{sequence_number: 2}},
-        payload:
-          <<92, 1, 184, 105, 243, 121, 62, 233, 29, 109, 103, 237, 76, 39, 197, 20, 67, 149, 169,
-            61, 178, 147, 249, 138, 15, 81, 60, 59, 234, 117, 32, 55, 245, 115, 49, 165, 19, 87,
-            99, 15, 255, 51, 62, 243, 41, 9>>
-      }
-      ~> Depayloader.handle_process(:input, &1, nil, %Depayloader.State{parser_acc: %FU{}})
-      |> assert_error_occurred()
+      assert {:ok, @empty_state} ==
+               %Buffer{
+                 metadata: %{rtp: %{sequence_number: 2}},
+                 payload:
+                   <<92, 1, 184, 105, 243, 121, 62, 233, 29, 109, 103, 237, 76, 39, 197, 20, 67,
+                     149, 169, 61, 178, 147, 249, 138, 15, 81, 60, 59, 234, 117, 32, 55, 245, 115,
+                     49, 165, 19, 87, 99, 15, 255, 51, 62, 243, 41, 9>>
+               }
+               ~> Depayloader.handle_process(:input, &1, nil, %Depayloader.State{
+                 parser_acc: %FU{}
+               })
     end
 
     test "when parsing Single Time Agregation Unit" do
-      %Buffer{
-        metadata: %{rtp: %{sequence_number: 2}},
-        payload: <<24>> <> <<35_402::16, 0, 0, 0, 0, 0, 0, 1, 1, 2>>
-      }
-      ~> Depayloader.handle_process(:input, &1, nil, @empty_state)
-      |> assert_error_occurred()
+      assert {:ok, @empty_state} ==
+               %Buffer{
+                 metadata: %{rtp: %{sequence_number: 2}},
+                 payload: <<24>> <> <<35_402::16, 0, 0, 0, 0, 0, 0, 1, 1, 2>>
+               }
+               ~> Depayloader.handle_process(:input, &1, nil, @empty_state)
     end
 
     test "when parsing not valid nalu" do
-      %Buffer{
-        metadata: %{rtp: %{sequence_number: 2}},
-        payload: <<128::8>>
-      }
-      ~> Depayloader.handle_process(:input, &1, nil, @empty_state)
-      |> assert_error_occurred()
-    end
-
-    defp assert_error_occurred(result) do
-      assert {{:ok, actions}, state} = result
-      assert actions == [redemand: :output]
-      assert state == @empty_state
+      assert {:ok, @empty_state} ==
+               %Buffer{
+                 metadata: %{rtp: %{sequence_number: 2}},
+                 payload: <<128::8>>
+               }
+               ~> Depayloader.handle_process(:input, &1, nil, @empty_state)
     end
   end
 end

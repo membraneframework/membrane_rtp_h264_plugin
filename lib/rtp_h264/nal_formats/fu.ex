@@ -81,7 +81,7 @@ defmodule Membrane.RTP.H264.FU do
   defp do_parse(%FU.Header{start_bit: true}, data, seq_num, acc),
     do: {:incomplete, %__MODULE__{acc | data: [data], last_seq_num: seq_num}}
 
-  defp do_parse(%FU.Header{start_bit: false}, _, _, %__MODULE__{last_seq_num: nil}),
+  defp do_parse(%FU.Header{start_bit: false}, _data, _seq_num, %__MODULE__{last_seq_num: nil}),
     do: {:error, :invalid_first_packet}
 
   defp do_parse(%FU.Header{end_bit: true, type: type}, data, seq_num, %__MODULE__{
@@ -101,5 +101,5 @@ defmodule Membrane.RTP.H264.FU do
        when is_next(last, seq_num),
        do: {:incomplete, %__MODULE__{fu | data: [data | acc], last_seq_num: seq_num}}
 
-  defp do_parse(_, _, _, _), do: {:error, :missing_packet}
+  defp do_parse(_header, _data, _seq_num, _fu), do: {:error, :missing_packet}
 end

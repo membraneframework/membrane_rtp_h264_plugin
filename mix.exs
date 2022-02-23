@@ -8,7 +8,7 @@ defmodule Membrane.RTP.H264.MixProject do
     [
       app: :membrane_rtp_h264_plugin,
       version: @version,
-      elixir: "~> 1.9",
+      elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       description: "Membrane RTP payloader and depayloader for H264",
@@ -17,10 +17,7 @@ defmodule Membrane.RTP.H264.MixProject do
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membraneframework.org",
-      deps: deps(),
-      aliases: [
-        credo: "credo --ignore Credo.Check.Refactor.PipeChainStart"
-      ]
+      deps: deps()
     ]
   end
 
@@ -38,6 +35,7 @@ defmodule Membrane.RTP.H264.MixProject do
     [
       main: "readme",
       extras: ["README.md", "LICENSE"],
+      formatters: ["HTML"],
       source_ref: "v#{@version}",
       nest_modules_by_prefix: [
         Membrane.RTP.H264
@@ -48,7 +46,7 @@ defmodule Membrane.RTP.H264.MixProject do
   defp package do
     [
       maintainers: ["Membrane Team"],
-      licenses: ["Apache 2.0"],
+      licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @github_url,
         "Membrane Framework Homepage" => "https://membraneframework.org"
@@ -58,10 +56,10 @@ defmodule Membrane.RTP.H264.MixProject do
 
   defp deps do
     [
-      {:bunch, "~> 1.2"},
-      {:membrane_core, "~> 0.8.0"},
+      {:membrane_core, "~> 0.9.0"},
       {:membrane_rtp_format, "~> 0.3.0"},
       {:membrane_h264_format, "~> 0.3.0"},
+      {:bunch, "~> 1.3"},
       # Dev
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0", only: :dev, runtime: false},

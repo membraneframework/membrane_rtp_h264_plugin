@@ -72,7 +72,7 @@ defmodule Membrane.RTP.H264.NAL.Header do
   end
 
   # If first bit is not set to 0 packet is flagged as malformed
-  def parse_unit_header(_), do: {:error, :malformed_data}
+  def parse_unit_header(_binary), do: {:error, :malformed_data}
 
   @doc """
   Adds NAL header to payload

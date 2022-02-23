@@ -9,7 +9,6 @@ defmodule Membrane.RTP.H264.Payloader do
 
   use Bunch
   use Membrane.Filter
-  use Membrane.Log
 
   alias Membrane.Buffer
   alias Membrane.RTP
@@ -40,9 +39,9 @@ defmodule Membrane.RTP.H264.Payloader do
 
   def_input_pad :input,
     caps: {H264, stream_format: :byte_stream, alignment: :nal},
-    demand_unit: :buffers
+    demand_mode: :auto
 
-  def_output_pad :output, caps: RTP
+  def_output_pad :output, caps: RTP, demand_mode: :auto
 
   defmodule State do
     @moduledoc false
@@ -92,12 +91,7 @@ defmodule Membrane.RTP.H264.Payloader do
         single_nalu: {:accept, buffer} -> {stap_acc_bufs ++ [buffer], state}
       end
 
-    {{:ok, buffer: {:output, buffers}, redemand: :output}, state}
-  end
-
-  @impl true
-  def handle_demand(:output, size, :buffers, _ctx, state) do
-    {{:ok, demand: {:input, size}}, state}
+    {{:ok, buffer: {:output, buffers}}, state}
   end
 
   @impl true
