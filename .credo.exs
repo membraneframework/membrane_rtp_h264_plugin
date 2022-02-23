@@ -157,8 +157,7 @@
         #
         # Controversial and experimental checks (opt-in, just replace `false` with `[]`)
         #
-        {Credo.Check.Readability.StrictModuleLayout,
-         priority: :normal, order: ~w/shortdoc moduledoc behaviour use import require alias/a},
+        {Credo.Check.Readability.StrictModuleLayout, priority: :normal},
         {Credo.Check.Consistency.MultiAliasImportRequireUse, false},
         {Credo.Check.Consistency.UnusedVariableNames, force: :meaningful},
         {Credo.Check.Design.DuplicatedCode, false},
