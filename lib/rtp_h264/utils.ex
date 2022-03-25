@@ -9,6 +9,10 @@ defmodule Membrane.RTP.H264.Utils do
   # This is rewritten from galene
   # https://github.com/jech/galene/blob/6fbdf0eab2c9640e673d9f9ec0331da24cbf2c4c/codecs/codecs.go#L119
   # and based on https://datatracker.ietf.org/doc/html/rfc6184#section-5
+  #
+  # it is also unclear why we sometimes check against nalu type == 7
+  # and sometimes against nalu type == 5 but galene does it this way
+  # and it works
   @spec is_keyframe(binary()) :: boolean()
   def is_keyframe(rtp_payload) when byte_size(rtp_payload) < 1, do: false
 
@@ -41,8 +45,9 @@ defmodule Membrane.RTP.H264.Utils do
 
   # FU-A or FU-B
   defp do_is_keyframe(nalu_type, payload)
-       when nalu_type in 28..29 and byte_size(payload) >= 2 do
-    <<_fu_indicator::8, fu_header::binary-size(1), _fu_payload::binary()>> = payload
+       when nalu_type in 28..29 and byte_size(payload) >= 1 do
+    # FU indicator has already been cut off
+    <<fu_header::binary-size(1), _fu_payload::binary()>> = payload
     <<s::1, _e::1, _r::1, type::5>> = fu_header
     s == 1 and type == 7
   end
@@ -69,7 +74,7 @@ defmodule Membrane.RTP.H264.Utils do
           # MTAP16 - skip DOND (8 bits) and TS offset (16 bits)
           26 -> 3
           # MTAP24 - skip DOND (8 bits) and TS offset (24 bits)
-          27 -> 32
+          27 -> 4
           # STAP-A or STAP-B - nothing to skip
           _other -> 0
         end
