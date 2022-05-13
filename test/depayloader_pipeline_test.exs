@@ -4,9 +4,9 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
   import Membrane.Testing.Assertions
 
   alias Membrane.Buffer
-  alias Membrane.Testing.Source
   alias Membrane.Support.DepayloaderTestingPipeline
   alias Membrane.Support.Formatters.{FUFactory, STAPFactory}
+  alias Membrane.Testing.Source
 
   describe "Depayloader in a pipeline" do
     test "does not crash when parsing staps" do

@@ -8,13 +8,13 @@ defmodule Membrane.RTP.H264.Depayloader do
   """
   use Membrane.Filter
 
-  alias Membrane.Buffer
-  alias Membrane.{RTP, RemoteStream}
-  alias Membrane.H264
-  alias Membrane.Event.Discontinuity
-  alias Membrane.RTP.H264.{FU, NAL, StapA}
-
   require Membrane.Logger
+
+  alias Membrane.Buffer
+  alias Membrane.Event.Discontinuity
+  alias Membrane.H264
+  alias Membrane.{RemoteStream, RTP}
+  alias Membrane.RTP.H264.{FU, NAL, StapA}
 
   @frame_prefix <<1::32>>
 
