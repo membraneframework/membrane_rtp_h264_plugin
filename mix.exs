@@ -13,11 +13,13 @@ defmodule Membrane.RTP.H264.MixProject do
       start_permanent: Mix.env() == :prod,
       description: "Membrane RTP payloader and depayloader for H264",
       package: package(),
+      deps: deps(),
+
+      # docs
       name: "Membrane RTP H264 Plugin",
       source_url: @github_url,
       docs: docs(),
-      homepage_url: "https://membraneframework.org",
-      deps: deps()
+      homepage_url: "https://membraneframework.org"
     ]
   end
 
