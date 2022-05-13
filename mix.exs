@@ -11,9 +11,12 @@ defmodule Membrane.RTP.H264.MixProject do
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      deps: deps(),
+      dialyzer: dialyzer(),
+
+      # hex
       description: "Membrane RTP payloader and depayloader for H264",
       package: package(),
-      deps: deps(),
 
       # docs
       name: "Membrane RTP H264 Plugin",
@@ -63,9 +66,22 @@ defmodule Membrane.RTP.H264.MixProject do
       {:membrane_h264_format, "~> 0.3.0"},
       {:bunch, "~> 1.3"},
       # Dev
-      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.0", only: :dev, runtime: false},
-      {:credo, "~> 1.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
+      {:credo, ">= 0.0.0", only: :dev, runtime: false}
     ]
+  end
+
+  defp dialyzer() do
+    opts = [
+      flags: [:error_handling]
+    ]
+
+    if System.get_env("CI") == "true" do
+      # Store PLTs in cacheable directory for CI
+      [plt_local_path: "priv/plts", plt_core_path: "priv/plts"] ++ opts
+    else
+      opts
+    end
   end
 end
