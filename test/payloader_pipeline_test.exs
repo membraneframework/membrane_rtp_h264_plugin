@@ -4,10 +4,10 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
   import Membrane.Testing.Assertions
 
   alias Membrane.Buffer
-  alias Membrane.Testing.Source
   alias Membrane.RTP.H264.NAL
   alias Membrane.RTP.H264.StapA
   alias Membrane.Support.PayloaderTestingPipeline
+  alias Membrane.Testing.Source
 
   @max_size 1400
 
