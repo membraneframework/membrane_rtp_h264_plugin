@@ -40,7 +40,7 @@ defmodule Membrane.RTP.H264.MixProject do
     [
       main: "readme",
       extras: ["README.md", "LICENSE"],
-      formatters: ["HTML"],
+      formatters: ["html"],
       source_ref: "v#{@version}",
       nest_modules_by_prefix: [
         Membrane.RTP.H264
