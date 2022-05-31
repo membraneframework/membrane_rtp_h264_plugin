@@ -58,9 +58,7 @@ defmodule Membrane.RTP.H264.MixProject do
     [
       {:membrane_core, "~> 0.10.0"},
       {:membrane_h264_format, "~> 0.3.0"},
-      # {:membrane_rtp_format, "~> 0.4.0"},
-      {:membrane_rtp_format,
-       github: "membraneframework/membrane_rtp_format", branch: "support-telemetry"},
+      {:membrane_rtp_format, github: "membraneframework/membrane_rtp_format"},
       {:bunch, "~> 1.3"},
       # Dev
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
