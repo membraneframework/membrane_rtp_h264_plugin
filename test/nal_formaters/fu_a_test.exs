@@ -26,7 +26,7 @@ defmodule Membrane.RTP.H264.FUTest do
           ~> ({_command, value} -> value)
         end)
 
-      expected_result = FUFactory.glued_fixtures() ~> (<<_header::8, rest::binary()>> -> rest)
+      expected_result = FUFactory.glued_fixtures() ~> (<<_header::8, rest::binary>> -> rest)
       assert result == {expected_result, 1}
     end
 

@@ -10,7 +10,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
 
   describe "Depayloader in a pipeline" do
     test "does not crash when parsing staps" do
-      {:ok, pid} =
+      {:ok, _supervisor_pid, pid} =
         STAPFactory.sample_data()
         |> Enum.chunk_every(2)
         |> Enum.map(&STAPFactory.into_stap_unit/1)
@@ -18,23 +18,24 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
-      Membrane.Pipeline.play(pid)
+      # Membrane.Pipeline.play(pid)
+      Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
 
       STAPFactory.sample_data()
       |> Enum.each(fn elem ->
         assert_sink_buffer(pid, :sink, buffer)
         assert %Buffer{payload: payload} = buffer
-        assert <<1::32, elem::binary()>> == payload
+        assert <<1::32, elem::binary>> == payload
       end)
 
-      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
+      Membrane.Pipeline.terminate(pid, blocking?: true)
     end
 
     test "does not crash when parsing fu" do
       glued_data = FUFactory.glued_fixtures()
       data_base = 1..10
 
-      {:ok, pid} =
+      {:ok, _supervisor_pid, pid} =
         data_base
         |> Enum.flat_map(fn _i -> FUFactory.get_all_fixtures() end)
         |> Enum.map(fn binary -> <<0::1, 2::2, 28::5>> <> binary end)
@@ -45,14 +46,15 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
-      Membrane.Pipeline.play(pid)
+      # Membrane.Pipeline.play(pid)
+      Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
 
       Enum.each(data_base, fn _i ->
         assert_sink_buffer(pid, :sink, %Buffer{payload: data})
-        assert <<1::32, ^glued_data::binary()>> = data
+        assert <<1::32, ^glued_data::binary>> = data
       end)
 
-      Membrane.Pipeline.stop_and_terminate(pid, blocking?: true)
+      Membrane.Pipeline.terminate(pid, blocking?: true)
     end
   end
 end

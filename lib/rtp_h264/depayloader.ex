@@ -18,10 +18,10 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   @frame_prefix <<1::32>>
 
-  def_input_pad :input, caps: RTP, demand_mode: :auto
+  def_input_pad :input, accepted_format: RTP, demand_mode: :auto
 
   def_output_pad :output,
-    caps: {RemoteStream, content_format: H264, type: :packetized},
+    accepted_format: %RemoteStream{content_format: H264, type: :packetized},
     demand_mode: :auto
 
   defmodule State do
@@ -30,38 +30,38 @@ defmodule Membrane.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_init(_opts) do
-    {:ok, %State{}}
+  def handle_init(_ctx, _opts) do
+    {[], %State{}}
   end
 
   @impl true
-  def handle_caps(:input, _caps, _context, state) do
-    caps = %RemoteStream{content_format: H264, type: :packetized}
-    {{:ok, caps: {:output, caps}}, state}
+  def handle_stream_format(:input, _stream_format, _context, state) do
+    stream_format = %RemoteStream{content_format: H264, type: :packetized}
+    {[stream_format: {:output, stream_format}], state}
   end
 
   @impl true
   def handle_process(:input, %Buffer{payload: ""}, _ctx, state) do
     Membrane.Logger.debug("Received empty RTP packet. Ignoring")
-    {:ok, state}
+    {[], state}
   end
 
   @impl true
   def handle_process(:input, buffer, _ctx, state) do
     with {:ok, {header, _payload} = nal} <- NAL.Header.parse_unit_header(buffer.payload),
          unit_type = NAL.Header.decode_type(header),
-         {{:ok, actions}, state} <- handle_unit_type(unit_type, nal, buffer, state) do
-      {{:ok, actions}, state}
+         {actions, state} when is_list(actions) <- handle_unit_type(unit_type, nal, buffer, state) do
+      {actions, state}
     else
       {:error, reason} ->
         log_malformed_buffer(buffer, reason)
-        {:ok, %State{state | parser_acc: nil}}
+        {[], %State{state | parser_acc: nil}}
     end
   end
 
   @impl true
-  def handle_event(:input, %Discontinuity{} = event, _context, %State{parser_acc: %FU{}} = state),
-    do: {{:ok, forward: event}, %State{state | parser_acc: nil}}
+  def handle_event(:input, %Discontinuity{} = event, _ctx, %State{parser_acc: %FU{}} = state),
+    do: {[forward: event], %State{state | parser_acc: nil}}
 
   @impl true
   def handle_event(pad, event, context, state), do: super(pad, event, context, state)
@@ -79,7 +79,7 @@ defmodule Membrane.RTP.H264.Depayloader do
         buffer_output(data, buffer, %State{state | parser_acc: nil})
 
       {:incomplete, fu} ->
-        {{:ok, []}, %State{state | parser_acc: fu}}
+        {[], %State{state | parser_acc: fu}}
 
       {:error, _reason} = error ->
         error
@@ -89,12 +89,13 @@ defmodule Membrane.RTP.H264.Depayloader do
   defp handle_unit_type(:stap_a, {_header, data}, buffer, state) do
     with {:ok, result} <- StapA.parse(data) do
       buffers = Enum.map(result, &%Buffer{buffer | payload: add_prefix(&1)})
-      {{:ok, buffer: {:output, buffers}}, state}
+      {[buffer: {:output, buffers}], state}
     end
   end
 
-  defp buffer_output(data, buffer, state),
-    do: {{:ok, action_from_data(data, buffer)}, state}
+  defp buffer_output(data, buffer, state) do
+    {action_from_data(data, buffer), state}
+  end
 
   defp action_from_data(data, buffer) do
     [buffer: {:output, %Buffer{buffer | payload: add_prefix(data)}}]

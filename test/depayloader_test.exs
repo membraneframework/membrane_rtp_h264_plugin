@@ -13,11 +13,11 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
       data = RBSPNaluFactory.sample_nalu()
       buffer = %Buffer{payload: data}
 
-      assert {{:ok, actions}, @empty_state} =
+      assert {actions, @empty_state} =
                Depayloader.handle_process(:input, buffer, nil, @empty_state)
 
       assert {:output, result} = Keyword.fetch!(actions, :buffer)
-      assert %Buffer{payload: <<1::32, processed_data::binary()>>} = result
+      assert %Buffer{payload: <<1::32, processed_data::binary>>} = result
       assert processed_data == data
     end
 
@@ -32,13 +32,13 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
                |> Enum.reduce(@empty_state, fn buffer, prev_state ->
                  Depayloader.handle_process(:input, buffer, nil, prev_state)
                  ~> (
-                   {{:ok, []}, %Depayloader.State{} = state} -> state
-                   {{:ok, actions}, state} -> {actions, state}
+                   {[], %Depayloader.State{} = state} -> state
+                   {actions, state} -> {actions, state}
                  )
                end)
 
       assert {:output, %Buffer{payload: data}} = Keyword.fetch!(actions, :buffer)
-      assert data == <<1::32, FUFactory.glued_fixtures()::binary()>>
+      assert data == <<1::32, FUFactory.glued_fixtures()::binary>>
     end
 
     test "parses STAP-A packets" do
@@ -46,8 +46,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
 
       buffer = %Buffer{payload: STAPFactory.into_stap_unit(data)}
 
-      assert {{:ok, actions}, _state} =
-               Depayloader.handle_process(:input, buffer, nil, @empty_state)
+      assert {actions, _state} = Depayloader.handle_process(:input, buffer, nil, @empty_state)
 
       assert [buffer: {:output, buffers}] = actions
 
@@ -66,14 +65,13 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
     test "drops current accumulator in case of discontinuity" do
       state = %Depayloader.State{parser_acc: %FU{}}
 
-      {{:ok, actions}, @empty_state} =
-        Depayloader.handle_event(:input, %Discontinuity{}, nil, state)
+      {actions, @empty_state} = Depayloader.handle_event(:input, %Discontinuity{}, nil, state)
 
       assert actions == [forward: %Discontinuity{}]
     end
 
     test "passes through rest of events" do
-      assert {{:ok, actions}, @empty_state} =
+      assert {actions, @empty_state} =
                Depayloader.handle_event(:input, %Discontinuity{}, nil, @empty_state)
 
       assert actions == [forward: %Discontinuity{}]
@@ -82,7 +80,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
 
   describe "Depayloader resets internal state in case of error and redemands" do
     test "when parsing Fragmentation Unit" do
-      assert {:ok, @empty_state} ==
+      assert {[], @empty_state} ==
                %Buffer{
                  metadata: %{rtp: %{sequence_number: 2}},
                  payload:
@@ -96,7 +94,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
     end
 
     test "when parsing Single Time Agregation Unit" do
-      assert {:ok, @empty_state} ==
+      assert {[], @empty_state} ==
                %Buffer{
                  metadata: %{rtp: %{sequence_number: 2}},
                  payload: <<24>> <> <<35_402::16, 0, 0, 0, 0, 0, 0, 1, 1, 2>>
@@ -105,7 +103,7 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
     end
 
     test "when parsing not valid nalu" do
-      assert {:ok, @empty_state} ==
+      assert {[], @empty_state} ==
                %Buffer{
                  metadata: %{rtp: %{sequence_number: 2}},
                  payload: <<128::8>>

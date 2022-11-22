@@ -17,7 +17,7 @@ defmodule Membrane.RTP.H264.Utils do
   def is_keyframe(rtp_payload) when byte_size(rtp_payload) < 1, do: false
 
   def is_keyframe(rtp_payload) do
-    <<_f::1, _nri::2, nalu_type::5, rest::binary()>> = rtp_payload
+    <<_f::1, _nri::2, nalu_type::5, rest::binary>> = rtp_payload
     do_is_keyframe(nalu_type, rest)
   end
 
@@ -39,7 +39,7 @@ defmodule Membrane.RTP.H264.Utils do
   # STAP-B, MTAP16 or MTAP24
   defp do_is_keyframe(nalu_type, payload)
        when nalu_type in 25..27 and byte_size(payload) >= 2 do
-    <<_don::16, aus::binary()>> = payload
+    <<_don::16, aus::binary>> = payload
     check_aggregation_units(nalu_type, aus)
   end
 
@@ -47,7 +47,7 @@ defmodule Membrane.RTP.H264.Utils do
   defp do_is_keyframe(nalu_type, payload)
        when nalu_type in 28..29 and byte_size(payload) >= 1 do
     # FU indicator has already been cut off
-    <<fu_header::binary-size(1), _fu_payload::binary()>> = payload
+    <<fu_header::binary-size(1), _fu_payload::binary>> = payload
     <<s::1, _e::1, _r::1, type::5>> = fu_header
     s == 1 and type == 7
   end
@@ -64,7 +64,7 @@ defmodule Membrane.RTP.H264.Utils do
   end
 
   defp check_first_aggregation_unit(type, aus) when byte_size(aus) >= 2 do
-    <<nalu_size::16, rest::binary()>> = aus
+    <<nalu_size::16, rest::binary>> = aus
 
     if byte_size(rest) < nalu_size do
       {:error, :au_too_short}
@@ -79,8 +79,8 @@ defmodule Membrane.RTP.H264.Utils do
           _other -> 0
         end
 
-      <<_x::binary-size(offset), nalu::binary-size(nalu_size), remaining_aus::binary()>> = rest
-      <<0::1, _nal_ref_idc::2, nalu_type::5, _rest::binary()>> = nalu
+      <<_x::binary-size(offset), nalu::binary-size(nalu_size), remaining_aus::binary>> = rest
+      <<0::1, _nal_ref_idc::2, nalu_type::5, _rest::binary>> = nalu
       {nalu_type == 7, remaining_aus}
     end
   end
