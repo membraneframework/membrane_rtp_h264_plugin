@@ -38,7 +38,7 @@ defmodule Membrane.RTP.H264.Payloader do
               ]
 
   def_input_pad :input,
-    accepted_format: %H264{stream_format: :byte_stream, alignment: :nal},
+    accepted_format: %H264{alignment: :nal},
     demand_mode: :auto
 
   def_output_pad :output, accepted_format: RTP, demand_mode: :auto
