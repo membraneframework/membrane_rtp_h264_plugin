@@ -16,12 +16,11 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
       big_unit_size = 10_000
       big_unit = <<1::32, 1, 0::size(big_unit_size)-unit(8)>>
 
-      {:ok, _supervisor_pid, pid} =
+      pid =
         [%Buffer{payload: big_unit, metadata: %{timestamp: 0, h264: %{end_access_unit: true}}}]
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
-      # Membrane.Pipeline.play(pid)
       Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
 
       data_base = 0..div(big_unit_size, @max_size)
@@ -68,7 +67,7 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
       single_size = div(@max_size - 1, number_of_packets) - 2
       single_unit = <<0::size(single_size)-unit(8)>>
 
-      {:ok, _supervisor_pid, pid} =
+      pid =
         %Buffer{
           payload: <<1::32>> <> single_unit,
           metadata: %{timestamp: 0, h264: %{end_access_unit: true}}
@@ -77,7 +76,6 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
-      # Membrane.Pipeline.play(pid)
       Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
 
       assert_sink_buffer(pid, :sink, %Buffer{payload: data, metadata: metadata})
@@ -93,7 +91,7 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
     test "payloads single NAL units" do
       number_of_packets = 16
 
-      {:ok, _supervisor_pid, pid} =
+      pid =
         1..number_of_packets
         |> Enum.map(&<<1::32, &1::size(@max_size)-unit(8)>>)
         |> Enum.map(
@@ -102,7 +100,6 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
-      # Membrane.Pipeline.play(pid)
       Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
 
       1..number_of_packets

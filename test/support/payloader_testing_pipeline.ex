@@ -17,7 +17,6 @@ defmodule Membrane.Support.PayloaderTestingPipeline do
           width: nil,
           height: nil,
           framerate: nil,
-          stream_format: :byte_stream,
           alignment: :nal,
           nalu_in_metadata?: nil,
           profile: nil
@@ -27,6 +26,6 @@ defmodule Membrane.Support.PayloaderTestingPipeline do
       |> child(:sink, Testing.Sink)
     ]
 
-    Pipeline.start_link_supervised(structure: structure)
+    Pipeline.start_link_supervised!(structure: structure)
   end
 end

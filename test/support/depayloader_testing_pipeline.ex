@@ -15,6 +15,6 @@ defmodule Membrane.Support.DepayloaderTestingPipeline do
       |> child(:sink, Testing.Sink)
     ]
 
-    Pipeline.start_link_supervised(structure: structure)
+    Pipeline.start_link_supervised!(structure: structure)
   end
 end

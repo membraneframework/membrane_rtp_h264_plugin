@@ -10,7 +10,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
 
   describe "Depayloader in a pipeline" do
     test "does not crash when parsing staps" do
-      {:ok, _supervisor_pid, pid} =
+      pid =
         STAPFactory.sample_data()
         |> Enum.chunk_every(2)
         |> Enum.map(&STAPFactory.into_stap_unit/1)
@@ -18,7 +18,6 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
-      # Membrane.Pipeline.play(pid)
       Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
 
       STAPFactory.sample_data()
@@ -35,7 +34,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
       glued_data = FUFactory.glued_fixtures()
       data_base = 1..10
 
-      {:ok, _supervisor_pid, pid} =
+      pid =
         data_base
         |> Enum.flat_map(fn _i -> FUFactory.get_all_fixtures() end)
         |> Enum.map(fn binary -> <<0::1, 2::2, 28::5>> <> binary end)
@@ -46,7 +45,6 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
-      # Membrane.Pipeline.play(pid)
       Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
 
       Enum.each(data_base, fn _i ->

@@ -50,7 +50,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   def handle_process(:input, buffer, _ctx, state) do
     with {:ok, {header, _payload} = nal} <- NAL.Header.parse_unit_header(buffer.payload),
          unit_type = NAL.Header.decode_type(header),
-         {actions, state} when is_list(actions) <- handle_unit_type(unit_type, nal, buffer, state) do
+         {:ok, {actions, state}} <- handle_unit_type(unit_type, nal, buffer, state) do
       {actions, state}
     else
       {:error, reason} ->
@@ -67,7 +67,8 @@ defmodule Membrane.RTP.H264.Depayloader do
   def handle_event(pad, event, context, state), do: super(pad, event, context, state)
 
   defp handle_unit_type(:single_nalu, _nal, buffer, state) do
-    buffer_output(buffer.payload, buffer, state)
+    result = buffer_output(buffer.payload, buffer, state)
+    {:ok, result}
   end
 
   defp handle_unit_type(:fu_a, {header, data}, buffer, state) do
@@ -76,10 +77,12 @@ defmodule Membrane.RTP.H264.Depayloader do
     case FU.parse(data, seq_num, map_state_to_fu(state)) do
       {:ok, {data, type}} ->
         data = NAL.Header.add_header(data, 0, header.nal_ref_idc, type)
-        buffer_output(data, buffer, %State{state | parser_acc: nil})
+        result = buffer_output(data, buffer, %State{state | parser_acc: nil})
+        {:ok, result}
 
       {:incomplete, fu} ->
-        {[], %State{state | parser_acc: fu}}
+        result = {[], %State{state | parser_acc: fu}}
+        {:ok, result}
 
       {:error, _reason} = error ->
         error
@@ -89,7 +92,8 @@ defmodule Membrane.RTP.H264.Depayloader do
   defp handle_unit_type(:stap_a, {_header, data}, buffer, state) do
     with {:ok, result} <- StapA.parse(data) do
       buffers = Enum.map(result, &%Buffer{buffer | payload: add_prefix(&1)})
-      {[buffer: {:output, buffers}], state}
+      result = {[buffer: {:output, buffers}], state}
+      {:ok, result}
     end
   end
 
