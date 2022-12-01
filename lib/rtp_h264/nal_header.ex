@@ -62,7 +62,7 @@ defmodule Membrane.RTP.H264.NAL.Header do
   @spec parse_unit_header(binary()) :: {:error, :malformed_data} | {:ok, {t(), binary()}}
   def parse_unit_header(raw_nal)
 
-  def parse_unit_header(<<0::1, nri::2, type::5, rest::binary()>>) do
+  def parse_unit_header(<<0::1, nri::2, type::5, rest::binary>>) do
     nal = %__MODULE__{
       nal_ref_idc: nri,
       type: type

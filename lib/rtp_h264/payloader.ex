@@ -38,10 +38,10 @@ defmodule Membrane.RTP.H264.Payloader do
               ]
 
   def_input_pad :input,
-    caps: {H264, stream_format: :byte_stream, alignment: :nal},
+    accepted_format: %H264{alignment: :nal},
     demand_mode: :auto
 
-  def_output_pad :output, caps: RTP, demand_mode: :auto
+  def_output_pad :output, accepted_format: RTP, demand_mode: :auto
 
   defmodule State do
     @moduledoc false
@@ -62,18 +62,18 @@ defmodule Membrane.RTP.H264.Payloader do
   end
 
   @impl true
-  def handle_init(options) do
-    {:ok, Map.merge(%State{}, Map.from_struct(options))}
+  def handle_init(_ctx, opts) do
+    {[], Map.merge(%State{}, Map.from_struct(opts))}
   end
 
   @impl true
-  def handle_prepared_to_playing(_ctx, state) do
-    {{:ok, caps: {:output, %RTP{}}}, state}
+  def handle_playing(_ctx, state) do
+    {[stream_format: {:output, %RTP{}}], state}
   end
 
   @impl true
-  def handle_caps(:input, _caps, _context, state) do
-    {:ok, state}
+  def handle_stream_format(:input, _stream_format, _context, state) do
+    {[], state}
   end
 
   @impl true
@@ -91,13 +91,13 @@ defmodule Membrane.RTP.H264.Payloader do
         single_nalu: {:accept, buffer} -> {stap_acc_bufs ++ [buffer], state}
       end
 
-    {{:ok, buffer: {:output, buffers}}, state}
+    {[buffer: {:output, buffers}], state}
   end
 
   @impl true
   def handle_end_of_stream(:input, _ctx, state) do
     {buffers, state} = flush_stap_acc(state)
-    {{:ok, buffer: {:output, buffers}, end_of_stream: :output}, state}
+    {[buffer: {:output, buffers}, end_of_stream: :output], state}
   end
 
   defp delete_prefix(<<0, 0, 0, 1, nal::binary>>), do: nal
@@ -117,7 +117,7 @@ defmodule Membrane.RTP.H264.Payloader do
     metadata_match? = !stap_acc.metadata || stap_acc.pts == buffer.pts
 
     if metadata_match? and size <= state.max_payload_size do
-      <<r::1, nri::2, _type::5, _rest::binary()>> = buffer.payload
+      <<r::1, nri::2, _type::5, _rest::binary>> = buffer.payload
 
       stap_acc = %{
         stap_acc
