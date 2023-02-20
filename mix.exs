@@ -62,7 +62,7 @@ defmodule Membrane.RTP.H264.MixProject do
   defp deps do
     [
       {:membrane_core, "~> 0.11.0"},
-      {:membrane_h264_format, "~> 0.4.0"},
+      {:membrane_h264_format, "~> 0.5.0"},
       {:membrane_rtp_format, "~> 0.6.0"},
       {:bunch, "~> 1.5"},
       # Dev

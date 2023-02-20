@@ -13,7 +13,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   alias Membrane.Buffer
   alias Membrane.Event.Discontinuity
   alias Membrane.H264
-  alias Membrane.{RemoteStream, RTP}
+  alias Membrane.RTP
   alias Membrane.RTP.H264.{FU, NAL, StapA}
 
   @frame_prefix <<1::32>>
@@ -21,7 +21,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   def_input_pad :input, accepted_format: RTP, demand_mode: :auto
 
   def_output_pad :output,
-    accepted_format: %RemoteStream{content_format: H264, type: :packetized},
+    accepted_format: %H264.RemoteStream{alignment: :nalu},
     demand_mode: :auto
 
   defmodule State do
@@ -36,7 +36,7 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   @impl true
   def handle_stream_format(:input, _stream_format, _context, state) do
-    stream_format = %RemoteStream{content_format: H264, type: :packetized}
+    stream_format = %H264.RemoteStream{alignment: :nalu}
     {[stream_format: {:output, stream_format}], state}
   end
 
