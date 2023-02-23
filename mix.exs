@@ -1,7 +1,7 @@
 defmodule Membrane.RTP.H264.MixProject do
   use Mix.Project
 
-  @version "0.15.0"
+  @version "0.15.1"
   @github_url "https://github.com/membraneframework/membrane_rtp_h264_plugin"
 
   def project do
@@ -22,7 +22,7 @@ defmodule Membrane.RTP.H264.MixProject do
       name: "Membrane RTP H264 Plugin",
       source_url: @github_url,
       docs: docs(),
-      homepage_url: "https://membraneframework.org"
+      homepage_url: "https://membrane.stream"
     ]
   end
 
@@ -54,7 +54,7 @@ defmodule Membrane.RTP.H264.MixProject do
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @github_url,
-        "Membrane Framework Homepage" => "https://membraneframework.org"
+        "Membrane Framework Homepage" => "https://membrane.stream"
       }
     ]
   end
