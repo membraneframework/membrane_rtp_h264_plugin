@@ -1,7 +1,7 @@
 defmodule Membrane.RTP.H264.MixProject do
   use Mix.Project
 
-  @version "0.16.1"
+  @version "0.17.0"
   @github_url "https://github.com/membraneframework/membrane_rtp_h264_plugin"
 
   def project do
