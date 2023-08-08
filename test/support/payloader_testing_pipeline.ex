@@ -17,7 +17,7 @@ defmodule Membrane.Support.PayloaderTestingPipeline do
           width: nil,
           height: nil,
           framerate: nil,
-          alignment: :nal,
+          alignment: :nalu,
           nalu_in_metadata?: nil,
           profile: nil
         }
