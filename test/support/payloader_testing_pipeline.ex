@@ -8,7 +8,7 @@ defmodule Membrane.Support.PayloaderTestingPipeline do
   alias Membrane.Testing
   alias Testing.Pipeline
 
-  @spec start_pipeline(any()) :: :ignore | {:error, any()} | {:ok, pid(), pid()}
+  @spec start_pipeline(any()) :: pid()
   def start_pipeline(data) do
     structure = [
       child(:source, %Testing.Source{
@@ -26,6 +26,6 @@ defmodule Membrane.Support.PayloaderTestingPipeline do
       |> child(:sink, Testing.Sink)
     ]
 
-    Pipeline.start_link_supervised!(structure: structure)
+    Pipeline.start_link_supervised!(spec: structure)
   end
 end
