@@ -21,7 +21,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   def_input_pad :input, accepted_format: RTP, demand_mode: :auto
 
   def_output_pad :output,
-    accepted_format: %H264.RemoteStream{alignment: :nalu},
+    accepted_format: %H264{alignment: :nalu, stream_structure: :annexb},
     demand_mode: :auto
 
   defmodule State do
@@ -36,7 +36,7 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   @impl true
   def handle_stream_format(:input, _stream_format, _context, state) do
-    stream_format = %H264.RemoteStream{alignment: :nalu}
+    stream_format = %H264{alignment: :nalu}
     {[stream_format: {:output, stream_format}], state}
   end
 
@@ -111,7 +111,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   defp map_state_to_fu(_state), do: %FU{}
 
   defp log_malformed_buffer(packet, reason) do
-    Membrane.Logger.warn("""
+    Membrane.Logger.warning("""
     An error occurred while parsing H264 RTP payload.
     Reason: #{reason}
     Packet: #{inspect(packet, limit: :infinity)}
