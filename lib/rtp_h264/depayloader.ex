@@ -111,7 +111,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   defp map_state_to_fu(_state), do: %FU{}
 
   defp log_malformed_buffer(packet, reason) do
-    Membrane.Logger.warn("""
+    Membrane.Logger.warning("""
     An error occurred while parsing H264 RTP payload.
     Reason: #{reason}
     Packet: #{inspect(packet, limit: :infinity)}
