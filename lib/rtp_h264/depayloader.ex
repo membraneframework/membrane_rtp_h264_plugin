@@ -21,7 +21,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   def_input_pad :input, accepted_format: RTP, demand_mode: :auto
 
   def_output_pad :output,
-    accepted_format: %H264{alignment: :nalu},
+    accepted_format: %H264{alignment: :nalu, stream_structure: :annexb},
     demand_mode: :auto
 
   defmodule State do
