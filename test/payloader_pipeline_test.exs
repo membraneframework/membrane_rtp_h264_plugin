@@ -21,8 +21,6 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
-      Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
-
       data_base = 0..div(big_unit_size, @max_size)
 
       Enum.each(data_base, fn i ->
@@ -59,7 +57,7 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         end
       end)
 
-      Membrane.Pipeline.terminate(pid, blocking?: true)
+      Membrane.Pipeline.terminate(pid)
     end
 
     test "payloads Stap A" do
@@ -76,8 +74,6 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
-      Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
-
       assert_sink_buffer(pid, :sink, %Buffer{payload: data, metadata: metadata})
       assert metadata.rtp.marker == true
       type = NAL.Header.encode_type(:stap_a)
@@ -85,7 +81,7 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
       assert {:ok, glued} = StapA.parse(rest)
       assert glued == List.duplicate(single_unit, number_of_packets)
 
-      Membrane.Pipeline.terminate(pid, blocking?: true)
+      Membrane.Pipeline.terminate(pid)
     end
 
     test "payloads single NAL units" do
@@ -100,8 +96,6 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> PayloaderTestingPipeline.start_pipeline()
 
-      Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
-
       1..number_of_packets
       |> Enum.each(fn i ->
         assert_sink_buffer(pid, :sink, %Buffer{payload: data, metadata: metadata})
@@ -109,7 +103,7 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         assert <<i::size(@max_size)-unit(8)>> == data
       end)
 
-      Membrane.Pipeline.terminate(pid, blocking?: true)
+      Membrane.Pipeline.terminate(pid)
     end
   end
 end

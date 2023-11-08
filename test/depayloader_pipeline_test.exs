@@ -18,8 +18,6 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
-      Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
-
       STAPFactory.sample_data()
       |> Enum.each(fn elem ->
         assert_sink_buffer(pid, :sink, buffer)
@@ -27,7 +25,7 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         assert <<1::32, elem::binary>> == payload
       end)
 
-      Membrane.Pipeline.terminate(pid, blocking?: true)
+      Membrane.Pipeline.terminate(pid)
     end
 
     test "does not crash when parsing fu" do
@@ -45,14 +43,12 @@ defmodule Membrane.RTP.H264.DepayloaderPipelineTest do
         |> Source.output_from_buffers()
         |> DepayloaderTestingPipeline.start_pipeline()
 
-      Membrane.Testing.Pipeline.execute_actions(pid, playback: :playing)
-
       Enum.each(data_base, fn _i ->
         assert_sink_buffer(pid, :sink, %Buffer{payload: data})
         assert <<1::32, ^glued_data::binary>> = data
       end)
 
-      Membrane.Pipeline.terminate(pid, blocking?: true)
+      Membrane.Pipeline.terminate(pid)
     end
   end
 end
