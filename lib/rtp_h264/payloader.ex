@@ -37,10 +37,9 @@ defmodule Membrane.RTP.H264.Payloader do
               ]
 
   def_input_pad :input,
-    accepted_format: %Membrane.H264{alignment: :nalu, stream_structure: :annexb},
-    demand_mode: :auto
+    accepted_format: %Membrane.H264{alignment: :nalu, stream_structure: :annexb}
 
-  def_output_pad :output, accepted_format: RTP, demand_mode: :auto
+  def_output_pad :output, accepted_format: RTP
 
   defmodule State do
     @moduledoc false
@@ -76,7 +75,7 @@ defmodule Membrane.RTP.H264.Payloader do
   end
 
   @impl true
-  def handle_process(:input, %Buffer{} = buffer, _ctx, state) do
+  def handle_buffer(:input, %Buffer{} = buffer, _ctx, state) do
     buffer = Map.update!(buffer, :payload, &delete_prefix/1)
 
     {buffers, state} =
