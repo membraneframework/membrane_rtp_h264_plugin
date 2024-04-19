@@ -78,8 +78,8 @@ defmodule Membrane.RTP.H264.NAL.Header do
   Adds NAL header to payload
   """
   @spec add_header(binary(), 0 | 1, nri(), type()) :: binary()
-  def add_header(payload, reserved, nri, type),
-    do: <<reserved::1, nri::2, type::5>> <> payload
+  def add_header(payload, f, nri, type),
+    do: <<f::1, nri::2, type::5>> <> payload
 
   @doc """
   Parses type stored in NAL Header

@@ -54,7 +54,7 @@ defmodule Membrane.RTP.H264.Payloader do
         dts: 0,
         metadata: nil,
         nri: 0,
-        reserved: 0
+        f: 0
       }
     ]
   end
@@ -115,7 +115,7 @@ defmodule Membrane.RTP.H264.Payloader do
     metadata_match? = !stap_acc.metadata || stap_acc.pts == buffer.pts
 
     if metadata_match? and size <= state.max_payload_size do
-      <<r::1, nri::2, _type::5, _rest::binary>> = buffer.payload
+      <<f::1, nri::2, _type::5, _rest::binary>> = buffer.payload
 
       stap_acc = %{
         stap_acc
@@ -124,8 +124,8 @@ defmodule Membrane.RTP.H264.Payloader do
           metadata: stap_acc.metadata || buffer.metadata,
           pts: buffer.pts,
           dts: buffer.dts,
-          reserved: stap_acc.reserved * r,
-          nri: min(stap_acc.nri, nri)
+          nri: max(stap_acc.nri, nri),
+          f: max(stap_acc.f, f)
       }
 
       {:accept, [], %{state | stap_acc: stap_acc}}
@@ -154,7 +154,7 @@ defmodule Membrane.RTP.H264.Payloader do
           ]
 
         payloads ->
-          payload = StapA.serialize(payloads, stap_acc.reserved, stap_acc.nri)
+          payload = StapA.serialize(payloads, stap_acc.f, stap_acc.nri)
 
           [
             %Buffer{

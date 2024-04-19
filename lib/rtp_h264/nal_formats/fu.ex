@@ -56,16 +56,13 @@ defmodule Membrane.RTP.H264.FU do
 
   defp do_serialize(data, r, nri, type, preferred_size) do
     case data do
-      <<head::binary-size(preferred_size), rest::binary>> ->
+      <<head::binary-size(preferred_size), rest::binary>> when byte_size(rest) > 0 ->
         payload =
           head
           |> FU.Header.add_header(0, 0, type)
           |> NAL.Header.add_header(r, nri, NAL.Header.encode_type(:fu_a))
 
         [payload] ++ do_serialize(rest, r, nri, type, preferred_size)
-
-      <<>> ->
-        []
 
       rest ->
         [
