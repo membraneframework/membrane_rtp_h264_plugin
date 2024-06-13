@@ -80,13 +80,12 @@ defmodule Membrane.RTP.H264.Payloader do
 
     {buffers, state} =
       withl mode: :non_interleaved <- state.mode,
-            stap_a: {:deny, stap_acc_bufs, state} <- try_stap_a(buffer, state),
             single_nalu: :deny <- try_single_nalu(buffer, state) do
-        {stap_acc_bufs ++ use_fu_a(buffer, state), state}
+        {use_fu_a(buffer, state), state}
       else
         mode: :single_nalu -> {use_single_nalu(buffer), state}
         stap_a: {:accept, buffers, state} -> {buffers, state}
-        single_nalu: {:accept, buffer} -> {stap_acc_bufs ++ [buffer], state}
+        single_nalu: {:accept, buffer} -> {[buffer], state}
       end
 
     {[buffer: {:output, buffers}], state}
@@ -100,75 +99,6 @@ defmodule Membrane.RTP.H264.Payloader do
 
   defp delete_prefix(<<0, 0, 0, 1, nal::binary>>), do: nal
   defp delete_prefix(<<0, 0, 1, nal::binary>>), do: nal
-
-  defp try_stap_a(buffer, state) do
-    with {:deny, acc_buffers, state} <- do_try_stap_a(buffer, state) do
-      # try again, after potential accumulator flush
-      {result, [], state} = do_try_stap_a(buffer, state)
-      {result, acc_buffers, state}
-    end
-  end
-
-  defp do_try_stap_a(buffer, state) do
-    %{stap_acc: stap_acc} = state
-    size = stap_acc.byte_size + StapA.aggregation_unit_size(buffer.payload)
-    metadata_match? = !stap_acc.metadata || stap_acc.pts == buffer.pts
-
-    if metadata_match? and size <= state.max_payload_size do
-      <<f::1, nri::2, _type::5, _rest::binary>> = buffer.payload
-
-      stap_acc = %{
-        stap_acc
-        | payloads: [buffer.payload | stap_acc.payloads],
-          byte_size: size,
-          metadata: stap_acc.metadata || buffer.metadata,
-          pts: buffer.pts,
-          dts: buffer.dts,
-          nri: max(stap_acc.nri, nri),
-          f: max(stap_acc.f, f)
-      }
-
-      {:accept, [], %{state | stap_acc: stap_acc}}
-    else
-      {buffers, state} = flush_stap_acc(state)
-      {:deny, buffers, state}
-    end
-  end
-
-  defp flush_stap_acc(%{stap_acc: stap_acc} = state) do
-    buffers =
-      case stap_acc.payloads do
-        [] ->
-          []
-
-        [payload] ->
-          # use single nalu
-          [
-            %Buffer{
-              payload: payload,
-              metadata: stap_acc.metadata,
-              pts: stap_acc.pts,
-              dts: stap_acc.dts
-            }
-            |> set_marker()
-          ]
-
-        payloads ->
-          payload = StapA.serialize(payloads, stap_acc.f, stap_acc.nri)
-
-          [
-            %Buffer{
-              payload: payload,
-              metadata: stap_acc.metadata,
-              pts: stap_acc.pts,
-              dts: stap_acc.dts
-            }
-            |> set_marker()
-          ]
-      end
-
-    {buffers, %{state | stap_acc: %State{}.stap_acc}}
-  end
 
   defp try_single_nalu(buffer, state) do
     if byte_size(buffer.payload) <= state.max_payload_size do
