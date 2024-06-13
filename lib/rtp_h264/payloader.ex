@@ -93,8 +93,7 @@ defmodule Membrane.RTP.H264.Payloader do
 
   @impl true
   def handle_end_of_stream(:input, _ctx, state) do
-    {buffers, state} = flush_stap_acc(state)
-    {[buffer: {:output, buffers}, end_of_stream: :output], state}
+    {[end_of_stream: :output], state}
   end
 
   defp delete_prefix(<<0, 0, 0, 1, nal::binary>>), do: nal
