@@ -121,7 +121,7 @@ defmodule Membrane.RTP.H264.Payloader do
         stap_acc
         | payloads: [buffer.payload | stap_acc.payloads],
           byte_size: size,
-          metadata: stap_acc.metadata || buffer.metadata,
+          metadata: buffer.metadata,
           pts: buffer.pts,
           dts: buffer.dts,
           nri: max(stap_acc.nri, nri),
