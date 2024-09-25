@@ -39,7 +39,7 @@ defmodule Membrane.RTP.H264.FU do
   @spec serialize(binary(), pos_integer()) :: list(binary()) | {:error, :unit_too_small}
   def serialize(data, preferred_size) do
     case data do
-      <<header::1-binary, head::binary-size(preferred_size), rest::binary>> ->
+      <<header::1-binary, head::binary-size(preferred_size - 1), rest::binary>> ->
         <<r::1, nri::2, type::5>> = header
 
         payload =
@@ -56,7 +56,7 @@ defmodule Membrane.RTP.H264.FU do
 
   defp do_serialize(data, r, nri, type, preferred_size) do
     case data do
-      <<head::binary-size(preferred_size), rest::binary>> when byte_size(rest) > 0 ->
+      <<head::binary-size(preferred_size - 2), rest::binary>> when byte_size(rest) > 0 ->
         payload =
           head
           |> FU.Header.add_header(0, 0, type)

@@ -33,27 +33,30 @@ defmodule Membrane.RTP.H264.PayloaderPipelineTest do
         assert nri == 0
         assert NAL.Header.encode_type(:fu_a) == fu_type
         assert real_type == 1
-        first..last = data_base
+        first..last//1 = data_base
 
         cond do
           i == first ->
             assert metadata.rtp.marker == false
             assert s == 1
             assert e == 0
-            assert rest == <<0::size(@max_size)-unit(8)>>
+            # in the first FU-A packet we can take `@max_size - 1` bytes
+            assert rest == <<0::size(@max_size - 1)-unit(8)>>
 
           i == last ->
             assert metadata.rtp.marker == true
             assert s == 0
             assert e == 1
-            last_chunk_size = rem(big_unit_size, @max_size)
+            # in the final FU-A packet we can take up to `@max_size - 2` bytes
+            last_chunk_size = rem(big_unit_size - (@max_size - 1), @max_size - 2)
             assert rest == <<0::size(last_chunk_size)-unit(8)>>
 
           true ->
             assert metadata.rtp.marker == false
             assert s == 0
             assert e == 0
-            assert rest == <<0::size(@max_size)-unit(8)>>
+            # in the "middle" FU-A packets we can take `@max_size - 2` bytes
+            assert rest == <<0::size(@max_size - 2)-unit(8)>>
         end
       end)
 

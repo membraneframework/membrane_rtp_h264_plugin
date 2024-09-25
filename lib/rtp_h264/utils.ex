@@ -18,12 +18,12 @@ defmodule Membrane.RTP.H264.Utils do
   # it is also unclear why we sometimes check against nalu type == 7
   # and sometimes against nalu type == 5 but galene does it this way
   # and it works
-  @spec is_keyframe(binary(), :sps | :idr) :: boolean()
-  def is_keyframe(rtp_payload, look_for \\ :sps)
+  @spec keyframe?(binary(), :sps | :idr) :: boolean()
+  def keyframe?(rtp_payload, look_for \\ :sps)
 
-  def is_keyframe(rtp_payload, _look_for) when byte_size(rtp_payload) < 1, do: false
+  def keyframe?(rtp_payload, _look_for) when byte_size(rtp_payload) < 1, do: false
 
-  def is_keyframe(rtp_payload, look_for) do
+  def keyframe?(rtp_payload, look_for) do
     <<_f::1, _nri::2, nalu_type::5, rest::binary>> = rtp_payload
     do_is_keyframe(nalu_type, rest, look_for)
   end
