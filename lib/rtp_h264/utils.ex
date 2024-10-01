@@ -3,8 +3,9 @@ defmodule Membrane.RTP.H264.Utils do
   Utility functions for RTP packets containing H264 encoded frames.
   """
 
-  @deprecated "Use #{inspect(__MODULE__)}.keyframe?/2 instead"
   @doc """
+  Deprecated since `v0.19.4`. Use `keyframe?/2` instead.
+
   Checks whether RTP payload contains H264 keyframe.
 
   By default, with option `look_for` set to `:sps`, will in some cases check
@@ -12,6 +13,7 @@ defmodule Membrane.RTP.H264.Utils do
   if `look_for` is set to `:idr`, will look exclusively for IDR frames
   (NALU payload type 5).
   """
+  @deprecated "Use #{inspect(__MODULE__)}.keyframe?/2 instead"
   @spec is_keyframe(binary(), :sps | :idr) :: boolean()
   # credo:disable-for-next-line Credo.Check.Readability.PredicateFunctionNames
   def is_keyframe(rtp_payload, look_for \\ :sps)
