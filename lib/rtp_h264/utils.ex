@@ -12,13 +12,6 @@ defmodule Membrane.RTP.H264.Utils do
   if `look_for` is set to `:idr`, will look exclusively for IDR frames
   (NALU payload type 5).
   """
-  # This is rewritten from galene
-  # https://github.com/jech/galene/blob/6fbdf0eab2c9640e673d9f9ec0331da24cbf2c4c/codecs/codecs.go#L119
-  # and based on https://datatracker.ietf.org/doc/html/rfc6184#section-5
-  #
-  # it is also unclear why we sometimes check against nalu type == 7
-  # and sometimes against nalu type == 5 but galene does it this way
-  # and it works
   @spec is_keyframe(binary(), :sps | :idr) :: boolean()
   # credo:disable-for-next-line Credo.Check.Readability.PredicateFunctionNames
   def is_keyframe(rtp_payload, look_for \\ :sps)
