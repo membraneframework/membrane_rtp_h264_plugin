@@ -3,6 +3,35 @@ defmodule Membrane.RTP.H264.Utils do
   Utility functions for RTP packets containing H264 encoded frames.
   """
 
+  @deprecated "Use #{inspect(__MODULE__)}.keyframe?/2 instead"
+  @doc """
+  Checks whether RTP payload contains H264 keyframe.
+
+  By default, with option `look_for` set to `:sps`, will in some cases check
+  whether the payload contains SPS (NALU payload type 7);
+  if `look_for` is set to `:idr`, will look exclusively for IDR frames
+  (NALU payload type 5).
+  """
+  # This is rewritten from galene
+  # https://github.com/jech/galene/blob/6fbdf0eab2c9640e673d9f9ec0331da24cbf2c4c/codecs/codecs.go#L119
+  # and based on https://datatracker.ietf.org/doc/html/rfc6184#section-5
+  #
+  # it is also unclear why we sometimes check against nalu type == 7
+  # and sometimes against nalu type == 5 but galene does it this way
+  # and it works
+  @spec is_keyframe(binary(), :sps | :idr) :: boolean()
+  # credo:disable-for-next-line Credo.Check.Readability.PredicateFunctionNames
+  def is_keyframe(rtp_payload, look_for \\ :sps)
+
+  # credo:disable-for-next-line Credo.Check.Readability.PredicateFunctionNames
+  def is_keyframe(rtp_payload, _look_for) when byte_size(rtp_payload) < 1, do: false
+
+  # credo:disable-for-next-line Credo.Check.Readability.PredicateFunctionNames
+  def is_keyframe(rtp_payload, look_for) do
+    <<_f::1, _nri::2, nalu_type::5, rest::binary>> = rtp_payload
+    do_is_keyframe(nalu_type, rest, look_for)
+  end
+
   @doc """
   Checks whether RTP payload contains H264 keyframe.
 
