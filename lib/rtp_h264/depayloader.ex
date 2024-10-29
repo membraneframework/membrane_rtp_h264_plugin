@@ -71,9 +71,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   end
 
   defp handle_unit_type(:fu_a, {header, data}, buffer, state) do
-    %Buffer{metadata: %{rtp: %{sequence_number: seq_num}}} = buffer
-
-    case FU.parse(data, seq_num, map_state_to_fu(state)) do
+    case FU.parse(data, map_state_to_fu(state)) do
       {:ok, {data, type}} ->
         data = NAL.Header.add_header(data, 0, header.nal_ref_idc, type)
         result = buffer_output(data, buffer, %State{state | parser_acc: nil})
