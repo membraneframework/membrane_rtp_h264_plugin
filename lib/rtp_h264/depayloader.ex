@@ -40,12 +40,6 @@ defmodule Membrane.RTP.H264.Depayloader do
   end
 
   @impl true
-  def handle_buffer(:input, %Buffer{payload: ""}, _ctx, state) do
-    Membrane.Logger.debug("Received empty RTP packet. Ignoring")
-    {[], state}
-  end
-
-  @impl true
   def handle_buffer(:input, buffer, _ctx, state) do
     with {:ok, {header, _payload} = nal} <- NAL.Header.parse_unit_header(buffer.payload),
          unit_type = NAL.Header.decode_type(header),
