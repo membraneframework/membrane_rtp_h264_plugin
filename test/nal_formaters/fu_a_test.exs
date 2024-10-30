@@ -5,14 +5,11 @@ defmodule Membrane.RTP.H264.FUTest do
   alias Membrane.RTP.H264.FU
   alias Membrane.Support.Formatters.FUFactory
 
-  @base_seq_num 4567
-
   describe "Fragmentation Unit parser" do
     test "parses first packet" do
       packet = FUFactory.first()
 
-      assert {:incomplete, fu} = FU.parse(packet, @base_seq_num, %FU{})
-      assert %FU{last_seq_num: @base_seq_num} = fu
+      assert {:incomplete, _fu} = FU.parse(packet, %FU{})
     end
 
     test "parses packet sequence" do
@@ -20,9 +17,8 @@ defmodule Membrane.RTP.H264.FUTest do
 
       result =
         fixtures
-        |> Enum.zip(1..Enum.count(fixtures))
-        |> Enum.reduce(%FU{}, fn {elem, seq_num}, acc ->
-          FU.parse(elem, seq_num, acc)
+        |> Enum.reduce(%FU{}, fn elem, acc ->
+          FU.parse(elem, acc)
           ~> ({_command, value} -> value)
         end)
 
@@ -30,25 +26,13 @@ defmodule Membrane.RTP.H264.FUTest do
       assert result == {expected_result, 1}
     end
 
-    test "returns error when one of non edge packets dropped" do
-      fixtures = FUFactory.get_all_fixtures()
-
-      assert {:error, :missing_packet} ==
-               fixtures
-               |> Enum.zip([0, 1, 3, 4, 5])
-               |> Enum.reduce(%FU{}, fn {elem, seq_num}, acc ->
-                 FU.parse(elem, seq_num, acc)
-                 ~>> ({command, fu} when command in [:incomplete, :ok] -> fu)
-               end)
-    end
-
     test "returns error when first packet is not starting packet" do
       invalid_first_packet = <<0::5, 3::3>>
-      assert {:error, :invalid_first_packet} == FU.parse(invalid_first_packet, 2, %FU{})
+      assert {:error, :invalid_first_packet} == FU.parse(invalid_first_packet, %FU{})
     end
 
     test "returns error when header is not valid" do
-      assert {:error, :packet_malformed} == FU.parse(<<0::2, 1::1, 1::5>>, 0, %FU{})
+      assert {:error, :packet_malformed} == FU.parse(<<0::2, 1::1, 1::5>>, %FU{})
     end
   end
 end
