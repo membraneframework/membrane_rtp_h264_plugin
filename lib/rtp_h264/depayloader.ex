@@ -12,8 +12,7 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   alias Membrane.Buffer
   alias Membrane.Event.Discontinuity
-  alias Membrane.H264
-  alias Membrane.RTP
+  alias Membrane.{H264, RTP}
   alias Membrane.RTP.H264.{FU, NAL, StapA}
 
   @frame_prefix <<1::32>>

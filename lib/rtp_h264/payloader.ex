@@ -11,7 +11,7 @@ defmodule Membrane.RTP.H264.Payloader do
   use Membrane.Filter
 
   alias Membrane.Buffer
-  alias Membrane.RTP
+  alias Membrane.{H264, RTP}
   alias Membrane.RTP.H264.{FU, StapA}
 
   def_options max_payload_size: [
