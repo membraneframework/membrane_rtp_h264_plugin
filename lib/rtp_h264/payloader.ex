@@ -39,7 +39,7 @@ defmodule Membrane.RTP.H264.Payloader do
   def_input_pad :input,
     accepted_format: %Membrane.H264{alignment: :nalu, stream_structure: :annexb}
 
-  def_output_pad :output, accepted_format: RTP
+  def_output_pad :output, accepted_format: %RTP{payload_format: H264}
 
   defmodule State do
     @moduledoc false
@@ -66,7 +66,7 @@ defmodule Membrane.RTP.H264.Payloader do
 
   @impl true
   def handle_playing(_ctx, state) do
-    {[stream_format: {:output, %RTP{}}], state}
+    {[stream_format: {:output, %RTP{payload_format: H264}}], state}
   end
 
   @impl true
