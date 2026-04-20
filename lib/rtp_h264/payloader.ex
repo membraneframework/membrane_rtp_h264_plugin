@@ -185,7 +185,7 @@ defmodule Membrane.RTP.H264.Payloader do
   defp use_fu_a(buffer, state) do
     buffer.payload
     |> FU.serialize(state.max_payload_size)
-    |> Enum.map(&%Buffer{buffer | payload: &1})
+    |> Enum.map(&%{buffer | payload: &1})
     |> Enum.map(&clear_marker/1)
     |> List.update_at(-1, &set_marker/1)
   end
