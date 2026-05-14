@@ -71,7 +71,7 @@ defmodule Membrane.RTP.H264.FU do
   defp do_parse(header, packet, acc)
 
   defp do_parse(%FU.Header{start_bit: true}, packet, acc),
-    do: {:incomplete, %__MODULE__{acc | data: [packet]}}
+    do: {:incomplete, %{acc | data: [packet]}}
 
   defp do_parse(%FU.Header{start_bit: false}, _data, %__MODULE__{data: []}),
     do: {:error, :invalid_first_packet}
@@ -86,5 +86,5 @@ defmodule Membrane.RTP.H264.FU do
   end
 
   defp do_parse(_header, packet, %__MODULE__{data: acc_data} = fu),
-    do: {:incomplete, %__MODULE__{fu | data: [packet | acc_data]}}
+    do: {:incomplete, %{fu | data: [packet | acc_data]}}
 end

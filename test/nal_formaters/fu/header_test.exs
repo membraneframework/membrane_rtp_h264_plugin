@@ -19,7 +19,7 @@ defmodule Membrane.RTP.H264.FU.HeaderTest do
       |> Enum.map(&Header.parse/1)
       |> Enum.zip(combinations)
       |> Enum.each(fn {result, {starting, ending}} ->
-        assert {:ok, {%Header{start_bit: r_starting, end_bit: r_ending}, _}} = result
+        assert {:ok, {%Header{start_bit: r_starting, end_bit: r_ending}, _r}} = result
         assert starting == 1 == r_starting
         assert ending == 1 == r_ending
       end)

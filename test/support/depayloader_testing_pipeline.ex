@@ -3,8 +3,8 @@ defmodule Membrane.Support.DepayloaderTestingPipeline do
 
   import Membrane.ChildrenSpec
 
-  alias Membrane.RTP.H264.Depayloader
   alias Membrane.{RTP, Testing}
+  alias Membrane.RTP.H264.Depayloader
   alias Testing.Pipeline
 
   @spec start_pipeline(any()) :: pid()

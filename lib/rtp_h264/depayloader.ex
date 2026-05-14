@@ -10,7 +10,6 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   require Membrane.Logger
 
-  alias Membrane.Buffer
   alias Membrane.Event.Discontinuity
   alias Membrane.{H264, RTP}
   alias Membrane.RTP.H264.{FU, NAL, StapA}
@@ -47,13 +46,13 @@ defmodule Membrane.RTP.H264.Depayloader do
     else
       {:error, reason} ->
         log_malformed_buffer(buffer, reason)
-        {[], %State{state | parser_acc: nil}}
+        {[], %{state | parser_acc: nil}}
     end
   end
 
   @impl true
   def handle_event(:input, %Discontinuity{} = event, _ctx, %State{parser_acc: %FU{}} = state),
-    do: {[forward: event], %State{state | parser_acc: nil}}
+    do: {[forward: event], %{state | parser_acc: nil}}
 
   @impl true
   def handle_event(pad, event, context, state), do: super(pad, event, context, state)
@@ -67,11 +66,11 @@ defmodule Membrane.RTP.H264.Depayloader do
     case FU.parse(data, map_state_to_fu(state)) do
       {:ok, {data, type}} ->
         data = NAL.Header.add_header(data, 0, header.nal_ref_idc, type)
-        result = buffer_output(data, buffer, %State{state | parser_acc: nil})
+        result = buffer_output(data, buffer, %{state | parser_acc: nil})
         {:ok, result}
 
       {:incomplete, fu} ->
-        result = {[], %State{state | parser_acc: fu}}
+        result = {[], %{state | parser_acc: fu}}
         {:ok, result}
 
       {:error, _reason} = error ->
@@ -81,7 +80,7 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   defp handle_unit_type(:stap_a, {_header, data}, buffer, state) do
     with {:ok, result} <- StapA.parse(data) do
-      buffers = Enum.map(result, &%Buffer{buffer | payload: add_prefix(&1)})
+      buffers = Enum.map(result, &%{buffer | payload: add_prefix(&1)})
       result = {[buffer: {:output, buffers}], state}
       {:ok, result}
     end
@@ -92,7 +91,7 @@ defmodule Membrane.RTP.H264.Depayloader do
   end
 
   defp action_from_data(data, buffer) do
-    [buffer: {:output, %Buffer{buffer | payload: add_prefix(data)}}]
+    [buffer: {:output, %{buffer | payload: add_prefix(data)}}]
   end
 
   defp add_prefix(data), do: @frame_prefix <> data
