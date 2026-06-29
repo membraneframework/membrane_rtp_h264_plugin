@@ -66,7 +66,7 @@ defmodule Membrane.RTP.H264.MixProject do
       {:membrane_rtp_format, "~> 0.11.0"},
       {:bunch, "~> 1.5"},
       # Dev
-      {:ex_doc, "~> 0.40", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.40.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
     ]
