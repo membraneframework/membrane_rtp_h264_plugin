@@ -62,9 +62,6 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
   describe "Depayloader when handling events" do
     alias Membrane.Event.Discontinuity
 
-    # Mirrors the relevant shape of the element callback context used by the
-    # default `Membrane.Filter.handle_event/4` (membrane_core 1.3+), which reads
-    # `context.pads[pad].direction` to forward events to the opposite pads.
     @context %{pads: %{input: %{direction: :input}, output: %{direction: :output}}}
 
     test "drops current accumulator in case of discontinuity" do
@@ -80,8 +77,6 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
       assert {actions, @empty_state} =
                Depayloader.handle_event(:input, %Discontinuity{}, @context, @empty_state)
 
-      # The default `Membrane.Filter.handle_event/4` forwards the event to all
-      # opposite-direction pads via an `:event` action (`:forward` is deprecated).
       assert actions == [event: {:output, %Discontinuity{}}]
     end
   end
