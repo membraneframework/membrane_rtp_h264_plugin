@@ -117,7 +117,7 @@ defmodule Membrane.RTP.H264.Utils do
           _other -> 0
         end
 
-      <<_x::binary-size(offset), nalu::binary-size(nalu_size), remaining_aus::binary>> = rest
+      <<_x::binary-size(^offset), nalu::binary-size(^nalu_size), remaining_aus::binary>> = rest
       <<0::1, _nal_ref_idc::2, nalu_type::5, _rest::binary>> = nalu
 
       case look_for do
