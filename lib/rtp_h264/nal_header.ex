@@ -87,14 +87,14 @@ defmodule Membrane.RTP.H264.NAL.Header do
   @spec decode_type(t) :: types()
   def decode_type(%__MODULE__{type: type}), do: do_decode_type(type)
 
-  defp do_decode_type(number) when number in 1..21, do: :single_nalu
+  defp do_decode_type(number) when number in 1..23, do: :single_nalu
   defp do_decode_type(24), do: :stap_a
   defp do_decode_type(25), do: :stap_b
   defp do_decode_type(26), do: :mtap_16
   defp do_decode_type(27), do: :mtap_24
   defp do_decode_type(28), do: :fu_a
   defp do_decode_type(29), do: :fu_b
-  defp do_decode_type(number) when number in 30..31 or number in [22, 23], do: :reserved
+  defp do_decode_type(number) when number in 30..31, do: :reserved
 
   @doc """
   Encodes given NAL type

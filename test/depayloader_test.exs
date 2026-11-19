@@ -59,6 +59,17 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
     end
   end
 
+  describe "Depayloader when processing packet types outside of the common ones" do
+    test "passes through packets with the types 22 and 23" do
+      for type <- [22, 23] do
+        data = <<0::1, 2::2, type::5, 1, 2, 3>>
+
+        assert {[buffer: {:output, %Buffer{payload: <<1::32, ^data::binary>>}}], @empty_state} =
+                 Depayloader.handle_buffer(:input, %Buffer{payload: data}, nil, @empty_state)
+      end
+    end
+  end
+
   describe "Depayloader when handling events" do
     alias Membrane.Event.Discontinuity
 
