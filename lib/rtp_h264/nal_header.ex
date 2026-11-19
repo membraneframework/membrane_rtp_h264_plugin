@@ -47,7 +47,7 @@ defmodule Membrane.RTP.H264.NAL.Header do
 
   RBSP types are described in detail [here](https://yumichan.net/video-processing/video-compression/introduction-to-h264-nal-unit)
   """
-  @type type :: 1..31
+  @type type :: 0..31
   @type supported_types :: :stap_a | :fu_a | :single_nalu
   @type unsupported_types :: :stap_b | :mtap_16 | :mtap_24 | :fu_b
   @type types :: supported_types | unsupported_types | :reserved
@@ -94,7 +94,7 @@ defmodule Membrane.RTP.H264.NAL.Header do
   defp do_decode_type(27), do: :mtap_24
   defp do_decode_type(28), do: :fu_a
   defp do_decode_type(29), do: :fu_b
-  defp do_decode_type(number) when number in 30..31, do: :reserved
+  defp do_decode_type(number) when number in [0, 30, 31], do: :reserved
 
   @doc """
   Encodes given NAL type

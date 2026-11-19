@@ -60,12 +60,34 @@ defmodule Membrane.RTP.H264.DepayloaderTest do
   end
 
   describe "Depayloader when processing packet types outside of the common ones" do
+    import ExUnit.CaptureLog
+
     test "passes through packets with the types 22 and 23" do
       for type <- [22, 23] do
         data = <<0::1, 2::2, type::5, 1, 2, 3>>
 
         assert {[buffer: {:output, %Buffer{payload: <<1::32, ^data::binary>>}}], @empty_state} =
                  Depayloader.handle_buffer(:input, %Buffer{payload: data}, nil, @empty_state)
+      end
+    end
+
+    test "drops packets of the types it does not support instead of crashing" do
+      for type <- [0, 25, 26, 27, 29, 30, 31] do
+        data = <<0::1, 2::2, type::5, 1, 2, 3>>
+        state = %Depayloader.State{parser_acc: %FU{data: [<<1>>]}}
+
+        log =
+          capture_log(fn ->
+            assert {[], %Depayloader.State{parser_acc: nil} = state} =
+                     Depayloader.handle_buffer(:input, %Buffer{payload: data}, nil, state)
+
+            assert {[], ^state} =
+                     Depayloader.handle_buffer(:input, %Buffer{payload: data}, nil, state)
+          end)
+
+        assert log =~ "unsupported type"
+        assert [_before, _after] = String.split(log, "[warning]")
+        refute log =~ inspect(data)
       end
     end
   end
