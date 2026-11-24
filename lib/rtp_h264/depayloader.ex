@@ -23,7 +23,7 @@ defmodule Membrane.RTP.H264.Depayloader do
 
   defmodule State do
     @moduledoc false
-    defstruct parser_acc: nil
+    defstruct parser_acc: nil, unsupported_type_logged?: false
   end
 
   @impl true
@@ -44,6 +44,9 @@ defmodule Membrane.RTP.H264.Depayloader do
          {:ok, {actions, state}} <- handle_unit_type(unit_type, nal, buffer, state) do
       {actions, state}
     else
+      {:error, {:unsupported_packet_type, type}} ->
+        {[], %{log_unsupported_type(type, state) | parser_acc: nil}}
+
       {:error, reason} ->
         log_malformed_buffer(buffer, reason)
         {[], %{state | parser_acc: nil}}
@@ -84,6 +87,23 @@ defmodule Membrane.RTP.H264.Depayloader do
       result = {[buffer: {:output, buffers}], state}
       {:ok, result}
     end
+  end
+
+  defp handle_unit_type(type, _nal, _buffer, _state),
+    do: {:error, {:unsupported_packet_type, type}}
+
+  defp log_unsupported_type(type, %State{unsupported_type_logged?: false} = state) do
+    Membrane.Logger.warning("""
+    Dropping an RTP packet of the unsupported type #{inspect(type)}. \
+    Further ones will be logged at the debug level.
+    """)
+
+    %State{state | unsupported_type_logged?: true}
+  end
+
+  defp log_unsupported_type(type, state) do
+    Membrane.Logger.debug("Dropping an RTP packet of the unsupported type #{inspect(type)}")
+    state
   end
 
   defp buffer_output(data, buffer, state) do
